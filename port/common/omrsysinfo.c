@@ -738,3 +738,32 @@ omrsysinfo_get_open_file_count(struct OMRPortLibrary *portLibrary, uint64_t *cou
 	return OMRPORT_ERROR_SYSINFO_GET_OPEN_FILES_NOT_SUPPORTED;
 }
 
+/**
+ * Determine OS features.
+ *
+ * @param[in] portLibrary instance of port library
+ * @param[out] desc pointer to the struct that will contain the OS features.
+ * desc will still be initialized if there is a failure.
+ *
+ * @return 0 on success, -1 on failure
+ */
+intptr_t
+omrsysinfo_get_os_description(struct OMRPortLibrary *portLibrary, OMROSDesc *desc)
+{
+	return -1;
+}
+
+/**
+ * Determine OS has a feature enabled.
+ *
+ * @param[in] portLibrary instance of port library
+ * @param[in] desc The struct that will contain the OS features
+ * @param[in] feature The feature to check (see omrport.h for list of OS features)
+ *
+ * @return TRUE if feature is present, FALSE otherwise.
+ */
+BOOLEAN
+omrsysinfo_os_has_feature(struct OMRPortLibrary *portLibrary, OMROSDesc *desc, uint32_t feature)
+{
+	return FALSE;
+}
