@@ -47,7 +47,8 @@ OBJECTS :=\
   thrdsup \
   rasthrsup \
   rwmutex \
-  ut_j9thr
+  ut_j9thr \
+  omrrttime
 
 ifeq (1,$(OMR_THR_JLM))
   OBJECTS += omrthreadjlm

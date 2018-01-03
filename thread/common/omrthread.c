@@ -36,6 +36,11 @@
 #include "omrutilbase.h"
 #include "ut_j9thr.h"
 
+#include <time.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include "omrport.h"
+
 void omrthread_init(omrthread_library_t lib);
 void omrthread_shutdown(void);
 
@@ -114,6 +119,31 @@ static void postForkResetLib(omrthread_t self);
 static void postForkResetMonitors(omrthread_t self);
 static void postForkResetRWMutexes(omrthread_t self);
 #endif /* defined(OMR_THR_FORK_SUPPORT) */
+
+static int64_t get_nano_time();
+static int64_t muldiv64(const int64_t num, const int64_t numerator, const int64_t denominator);
+extern int64_t MAXPREC();
+
+static int64_t
+muldiv64(const int64_t num, const int64_t numerator, const int64_t denominator)
+{
+	const int64_t quotient = num / denominator;
+	const int64_t remainder = num - quotient * denominator;
+	const int64_t res = quotient * numerator + ((remainder * numerator) / denominator);
+	return res;
+}
+
+static int64_t
+get_nano_time()
+{
+	const int64_t subnanosec = MAXPREC();
+
+	// calculate nanosec = subnanosec * NUMERATOR / DENOMINATOR via integer arithmetics
+	const int64_t nanosec = muldiv64(subnanosec,
+			OMRPORT_TIME_HIRES_NANOTIME_NUMERATOR, OMRPORT_TIME_HIRES_NANOTIME_DENOMINATOR);
+
+	return nanosec;
+}
 
 #ifdef THREAD_ASSERTS
 /**
@@ -4396,7 +4426,6 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 		 * TIMED WAIT
 		 */
 		intptr_t boundedMillis = BOUNDED_I64_TO_IDATA(millis);
-
 		ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor);
 		OMROSCOND_WAIT_IF_TIMEDOUT(MONITOR_WAIT_CONDITION(self, monitor), monitor->mutex, boundedMillis, nanos) {
 			ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor);
@@ -4430,9 +4459,16 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 		/*
 		 * WAIT UNTIL NOTIFIED, NO TIMEOUT
 		 */
+		int64_t startTime = 0;
+		int64_t endTime = 0;
+		int i = 1;
 
 		ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor);
+		startTime = get_nano_time();
 		OMROSCOND_WAIT(MONITOR_WAIT_CONDITION(self,monitor), monitor->mutex);
+			endTime = get_nano_time();
+			fprintf(stdout, "\t%d. condition_wait time = %ld ms, self = %p, monitor = %p\n", i, ((endTime - startTime)/1000000), self, monitor);
+			i++;
 			ASSERT_MONITOR_UNOWNED_IF_NOT_3TIER(monitor);
 
 			THREAD_LOCK(self, CALLER_MONITOR_WAIT2);
@@ -4444,7 +4480,9 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 				break;
 			}
 			THREAD_UNLOCK(self);
+			startTime = get_nano_time();
 		OMROSCOND_WAIT_LOOP();
+
 	}
 
 	/* DONE WAITING AT THIS POINT */
