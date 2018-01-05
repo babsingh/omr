@@ -1456,18 +1456,19 @@ static uintptr_t
 sigqueue_is_reliable(void)
 {
 #if defined(LINUX)
-	struct utsname sysinfo;
-	uintptr_t release = 0;
-
-	/* If either uname() or sscanf() fail, version will stay zero
-	 * and we'll consider sigqueue() unreliable.
-	 */
-	if (0 == uname(&sysinfo)) {
-		sscanf(sysinfo.release, "%lu", &release);
-	}
-
-	/* sigqueue() is sufficiently reliable on newer Linux kernels (version 3.* and later). */
-	return release >= 3;
+//	struct utsname sysinfo;
+//	uintptr_t release = 0;
+//
+//	/* If either uname() or sscanf() fail, version will stay zero
+//	 * and we'll consider sigqueue() unreliable.
+//	 */
+//	if (0 == uname(&sysinfo)) {
+//		sscanf(sysinfo.release, "%lu", &release);
+//	}
+//
+//	/* sigqueue() is sufficiently reliable on newer Linux kernels (version 3.* and later). */
+//	return release >= 3;
+	return 0;
 #elif defined(AIXPPC) || defined(J9ZOS390)
 	/* The controller can't use sem_timedwait_r on AIX or z/OS. */
 	return 0;
