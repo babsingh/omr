@@ -687,6 +687,8 @@ omrthread_shutdown(void)
 #if defined(OMR_PORT_NUMA_SUPPORT)
 	omrthread_numa_shutdown(lib);
 #endif /* OMR_PORT_NUMA_SUPPORT */
+	fprintf(stdout, "Running omrthread_shutdown.\n");
+
 	omrthread_attr_destroy(&lib->systemThreadAttr);
 	OMROSMUTEX_DESTROY(lib->tls_mutex);
 	OMROSMUTEX_DESTROY(lib->monitor_mutex);

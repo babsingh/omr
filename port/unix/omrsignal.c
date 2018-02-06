@@ -35,6 +35,8 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <setjmp.h>
 #include "omrsignal_context.h"
 
@@ -787,6 +789,8 @@ masterSynchSignalHandler(int signal, siginfo_t *sigInfo, void *contextInfo)
 
 	omrthread_t thisThread = omrthread_self();
 	uint32_t result = U_32_MAX;
+
+	fprintf(stdout, "Running masterSynchSignalHandler.\n");
 
 	if (NULL != thisThread) {
 

@@ -64,3 +64,9 @@ subtractAtomic(volatile uintptr_t *address, uintptr_t value)
 {
 	return VM_AtomicSupport::subtract(address, value);
 }
+
+uintptr_t
+setAtomic(volatile uintptr_t *address, uintptr_t value)
+{
+	return VM_AtomicSupport::set(address, value);
+}
