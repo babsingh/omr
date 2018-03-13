@@ -551,6 +551,12 @@ omrsig_set_async_signal_handler(struct OMRPortLibrary* portLibrary, omrsig_handl
 	return rc;
 }
 
+void *
+omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary,  omrsig_handler_fn handler, void *handler_arg, uint32_t signal)
+{
+	return NULL;
+}
+
 /*
  * The full shutdown routine "sig_full_shutdown" overrides this once we've completed startup 
  */

@@ -171,6 +171,13 @@ omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary,  omrsig_hand
 	return 1;
 }
 
+void *
+omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary,  omrsig_handler_fn handler, void *handler_arg, uint32_t signal)
+{
+	return NULL;
+}
+
+
 /**
  * Determine if the port library is capable of protecting a function from the indicated signals in the indicated way.
  *

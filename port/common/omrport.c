@@ -215,6 +215,7 @@ static OMRPortLibrary MasterPortLibraryTable = {
 	omrsig_protect,  /* sig_protect */
 	omrsig_can_protect, /* sig_can_protect */
 	omrsig_set_async_signal_handler, /* sig_set_async_signal_handler */
+	omrsig_set_single_async_signal_handler, /* sig_set_single__async_signal_handler */
 	omrsig_info, /* sig_info */
 	omrsig_info_count, /* sig_info_count */
 	omrsig_set_options, /* sig_set_options */
