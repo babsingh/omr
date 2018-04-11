@@ -30,7 +30,7 @@ typedef struct J9Win32AsyncHandlerRecord {
 	OMRPortLibrary *portLib;
 	omrsig_handler_fn handler;
 	void *handler_arg;
-	uint32_t flags;
+	uint64_t flags;
 	struct J9Win32AsyncHandlerRecord *next;
 } J9Win32AsyncHandlerRecord;
 
@@ -44,7 +44,7 @@ static uint32_t signalOptions;
 /* key to get the current synchronous signal */
 static omrthread_tls_key_t tlsKeyCurrentSignal;
 
-static uint32_t mapWin32ExceptionToPortlibType(uint32_t exceptionCode);
+static uint64_t mapWin32ExceptionToPortlibType(uint32_t exceptionCode);
 static uint32_t infoForGPR(struct OMRPortLibrary *portLibrary, struct J9Win32SignalInfo *info, int32_t index, const char **name, void **value);
 static void removeAsyncHandlers(OMRPortLibrary *portLibrary);
 static void fillInWin32SignalInfo(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, EXCEPTION_POINTERS *exceptionInfo, struct J9Win32SignalInfo *j9info);
@@ -52,7 +52,7 @@ static uint32_t infoForSignal(struct OMRPortLibrary *portLibrary, struct J9Win32
 static uint32_t infoForModule(struct OMRPortLibrary *portLibrary, struct J9Win32SignalInfo *info, int32_t index, const char **name, void **value);
 static uint32_t countInfoInCategory(struct OMRPortLibrary *portLibrary, void *info, uint32_t category);
 static BOOL WINAPI consoleCtrlHandler(DWORD dwCtrlType);
-int structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, EXCEPTION_POINTERS *exceptionInfo);
+int structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, EXCEPTION_POINTERS *exceptionInfo);
 static uint32_t infoForControl(struct OMRPortLibrary *portLibrary, struct J9Win32SignalInfo *info, int32_t index, const char **name, void **value);
 static intptr_t setCurrentSignal(struct OMRPortLibrary *portLibrary, intptr_t signal);
 
@@ -86,7 +86,7 @@ omrsig_info_count(struct OMRPortLibrary *portLibrary, void *info, uint32_t categ
 
 
 int32_t
-omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result)
+omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result)
 {
 
 	if (0 == (signalOptions & OMRPORT_SIG_OPTIONS_REDUCED_SIGNALS_SYNCHRONOUS)) {
@@ -107,7 +107,7 @@ omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void
 }
 
 uint32_t
-omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags)
+omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags)
 {
 
 	uint32_t rc = 0;
@@ -180,27 +180,27 @@ omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handl
 }
 
 void *
-omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t portlibSignalFlag)
+omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t portlibSignalFlag)
 {
 	return NULL;
 }
 
-uint32_t
+uint64_t
 omrsig_map_os_signal_to_portlib_signal(struct OMRPortLibrary *portLibrary, uint32_t osSignalValue)
 {
 	return 0;
 }
 
 int32_t
-omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint32_t portlibSignalFlag)
+omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint64_t portlibSignalFlag)
 {
 	return -1;
 }
 
 int32_t
-omrsig_can_protect(struct OMRPortLibrary *portLibrary,  uint32_t flags)
+omrsig_can_protect(struct OMRPortLibrary *portLibrary, uint64_t flags)
 {
-	uint32_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION;
+	uint64_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION;
 
 	if (0 == (signalOptions & OMRPORT_SIG_OPTIONS_REDUCED_SIGNALS_SYNCHRONOUS)) {
 		supportedFlags |= OMRPORT_SIG_FLAG_SIGALLSYNC;
@@ -265,10 +265,10 @@ omrsig_startup(struct OMRPortLibrary *portLibrary)
 }
 
 int
-structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, EXCEPTION_POINTERS *exceptionInfo)
+structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, EXCEPTION_POINTERS *exceptionInfo)
 {
 	uint32_t result;
-	uint32_t type;
+	uint64_t type;
 	intptr_t prevSigType;
 	struct J9Win32SignalInfo j9info;
 
@@ -284,7 +284,7 @@ structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn
 	fillInWin32SignalInfo(portLibrary, handler, exceptionInfo, &j9info);
 
 	prevSigType = portLibrary->sig_get_current_signal(portLibrary);
-	setCurrentSignal(portLibrary, type);
+	setCurrentSignal(portLibrary, (intptr_t)type);
 
 	__try {
 		result = handler(portLibrary, j9info.type, &j9info, handler_arg);
@@ -305,7 +305,7 @@ structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn
 
 }
 
-static uint32_t
+static uint64_t
 mapWin32ExceptionToPortlibType(uint32_t exceptionCode)
 {
 	switch (exceptionCode) {

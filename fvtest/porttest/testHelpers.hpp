@@ -86,7 +86,7 @@ void testFileCleanUp(const char* filePrefix);
 /**
  * @see omrsignalTest.c::validateGPInfo
  */
-void validateGPInfo(struct OMRPortLibrary *portLibrary, uint32_t gpType, omrsig_handler_fn handler, void *gpInfo, const char *testName);
+void validateGPInfo(struct OMRPortLibrary *portLibrary, uint64_t gpType, omrsig_handler_fn handler, void *gpInfo, const char *testName);
 
 #ifdef __cplusplus
 }

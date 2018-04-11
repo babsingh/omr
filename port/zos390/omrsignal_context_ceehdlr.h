@@ -40,7 +40,7 @@ typedef struct {
 	char entry_name[MAX_NAME];
 	_INT4 entry_address;
 #endif
-	uint32_t portLibrarySignalType;
+	uint64_t portLibrarySignalType;
 	void *handlerAddress;
 	void *handlerAddress2;
 } J9LEConditionInfo;

@@ -53,7 +53,7 @@ struct frameData
  * anything in the handler.
  */
 static uintptr_t
-handler(struct OMRPortLibrary *portLibrary, uintptr_t gpType, void* gpInfo, void* userData)
+handler(struct OMRPortLibrary *portLibrary, uint64_t gpType, void* gpInfo, void* userData)
 {
 	return OMRPORT_SIG_EXCEPTION_RETURN;
 }

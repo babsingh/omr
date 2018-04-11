@@ -27,7 +27,7 @@
 
 typedef struct J9Win32SignalInfo {
 	uint32_t systemType;
-	uint32_t portLibType;
+	uint64_t portLibType;
 	void *handlerAddress;
 	void *handlerAddress2;
 	struct _EXCEPTION_RECORD *ExceptionRecord;

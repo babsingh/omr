@@ -244,7 +244,7 @@ j9vm_le_condition_handler(_FEEDBACK *fc, _INT4 *token, _INT4 *leResult, _FEEDBAC
 }
 
 int32_t
-omrsig_protect_ceehdlr(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result)
+omrsig_protect_ceehdlr(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result)
 {
 
 	struct J9ZOSLEConditionHandlerRecord thisRecord;

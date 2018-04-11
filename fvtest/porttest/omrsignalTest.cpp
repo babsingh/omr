@@ -81,19 +81,19 @@ struct PortSigMap testSignalMap[] = {
 };
 
 typedef struct AsyncHandlerInfo {
-	uint32_t expectedType;
+	uint64_t expectedType;
 	const char *testName;
 	omrthread_monitor_t *monitor;
 	uint32_t controlFlag;
 } AsyncHandlerInfo;
 
-static uintptr_t asyncTestHandler(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *userData);
+static uintptr_t asyncTestHandler(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *userData);
 static void injectUnixSignal(struct OMRPortLibrary *portLibrary, int pid, int unixSignal);
 
 #endif /* J9SIGNAL_TEST_RUN_ASYNC_UNIX_TESTS */
 
 typedef struct SigProtectHandlerInfo {
-	uint32_t expectedType;
+	uint64_t expectedType;
 	uintptr_t returnValue;
 	const char *testName;
 } SigProtectHandlerInfo;
@@ -109,7 +109,7 @@ static U_32 portTestOptionsGlobal;
  *
  */
 static uintptr_t
-asyncTestHandler(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *handlerInfo, void *userData)
+asyncTestHandler(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *handlerInfo, void *userData)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	AsyncHandlerInfo *info = (AsyncHandlerInfo *) userData;
@@ -118,9 +118,9 @@ asyncTestHandler(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *hand
 
 	omrthread_monitor_enter(monitor);
 	portTestEnv->changeIndent(2);
-	portTestEnv->log("asyncTestHandler invoked (type = 0x%x)\n", gpType);
+	portTestEnv->log("asyncTestHandler invoked (type = 0x%016.16llx)\n", gpType);
 	if (info->expectedType != gpType) {
-		outputErrorMessage(PORTTEST_ERROR_ARGS, "asyncTestHandler -- incorrect type. Expecting 0x%x, got 0x%x\n", info->expectedType, gpType);
+		outputErrorMessage(PORTTEST_ERROR_ARGS, "asyncTestHandler -- incorrect type. Expecting 0x%016.16llx, got 0x%016.16llx\n", info->expectedType, gpType);
 	}
 
 	portTestEnv->changeIndent(-2);
@@ -220,7 +220,7 @@ validatePlatformRegister(struct OMRPortLibrary *portLibrary, void *gpInfo, uint3
 }
 
 void
-validateGPInfo(struct OMRPortLibrary *portLibrary, uint32_t gpType, omrsig_handler_fn handler, void *gpInfo, const char *testName)
+validateGPInfo(struct OMRPortLibrary *portLibrary, uint64_t gpType, omrsig_handler_fn handler, void *gpInfo, const char *testName)
 {
 	uint32_t category;
 	void *value;
@@ -289,8 +289,8 @@ validateGPInfo(struct OMRPortLibrary *portLibrary, uint32_t gpType, omrsig_handl
 	infoKind = omrsig_info(gpInfo, OMRPORT_SIG_SIGNAL, OMRPORT_SIG_SIGNAL_TYPE, &name, &value);
 	if (infoKind != OMRPORT_SIG_VALUE_32) {
 		outputErrorMessage(PORTTEST_ERROR_ARGS, "OMRPORT_SIG_SIGNAL_TYPE type is not OMRPORT_SIG_VALUE_32. It is %u\n", infoKind);
-	} else if (*(uint32_t *)value != gpType) {
-		outputErrorMessage(PORTTEST_ERROR_ARGS, "OMRPORT_SIG_SIGNAL_TYPE is incorrect. Expecting %u, got %u\n", gpType, *(uint32_t *)value);
+	} else if (*(uint64_t *)value != gpType) {
+		outputErrorMessage(PORTTEST_ERROR_ARGS, "OMRPORT_SIG_SIGNAL_TYPE is incorrect. Expecting 0x%016.16llx, got 0x%016.16llx\n", gpType, *(uint64_t *)value);
 	}
 
 	infoKind = omrsig_info(gpInfo, OMRPORT_SIG_SIGNAL, OMRPORT_SIG_SIGNAL_HANDLER, &name, &value);
@@ -382,16 +382,16 @@ sampleFunction(OMRPortLibrary *portLibrary, void *arg)
 
 
 static uintptr_t
-simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg)
+simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	SigProtectHandlerInfo *info = (SigProtectHandlerInfo *)handler_arg;
 	const char *testName = info->testName;
 
-	portTestEnv->log("simpleHandlerFunction invoked (type = 0x%x)\n", gpType);
+	portTestEnv->log("simpleHandlerFunction invoked (type = 0x%016.16llx)\n", gpType);
 
 	if (info->expectedType != gpType) {
-		outputErrorMessage(PORTTEST_ERROR_ARGS, "simpleHandlerFunction -- incorrect type. Expecting 0x%x, got 0x%x\n", info->expectedType, gpType);
+		outputErrorMessage(PORTTEST_ERROR_ARGS, "simpleHandlerFunction -- incorrect type. Expecting 0x%016.16llx, got 0x%016.16llx\n", info->expectedType, gpType);
 	}
 	validateGPInfo(OMRPORTLIB, gpType, simpleHandlerFunction, gpInfo, testName);
 
@@ -399,7 +399,7 @@ simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void 
 }
 
 static uintptr_t
-currentSigNumHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg)
+currentSigNumHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	SigProtectHandlerInfo *info = (SigProtectHandlerInfo *)handler_arg;
@@ -410,21 +410,21 @@ currentSigNumHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType
 		outputErrorMessage(PORTTEST_ERROR_ARGS, "currentSigNumHandlerFunction -- omrsig_get_current_signal call failed\n");
 		return OMRPORT_SIG_EXCEPTION_CONTINUE_SEARCH;
 	}
-	if (gpType != (uint32_t) currentSigNum) {
-		outputErrorMessage(PORTTEST_ERROR_ARGS, "currentSigNumHandlerFunction -- unexpected value for current signal. Expecting 0x%x, got 0x%x\n", gpType, (uint32_t)currentSigNum);
+	if (gpType != (uint64_t)currentSigNum) {
+		outputErrorMessage(PORTTEST_ERROR_ARGS, "currentSigNumHandlerFunction -- unexpected value for current signal. Expecting 0x%016.16llx, got 0x%016.16llx\n", gpType, (uint64_t)currentSigNum);
 		return OMRPORT_SIG_EXCEPTION_CONTINUE_SEARCH;
 	}
 	return OMRPORT_SIG_EXCEPTION_RETURN;
 }
 
 static uintptr_t
-crashingHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg)
+crashingHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	const char *testName = (const char *)handler_arg;
 	static int recursive = 0;
 
-	portTestEnv->log("crashingHandlerFunction invoked (type = 0x%x)\n", gpType);
+	portTestEnv->log("crashingHandlerFunction invoked (type = 0x%016.16llx)\n", gpType);
 
 	if (recursive++) {
 		outputErrorMessage(PORTTEST_ERROR_ARGS, "handler invoked recursively\n");

@@ -51,7 +51,7 @@ typedef struct J9PlatformSignalInfo {
  */
 typedef struct OMRUnixSignalInfo {
 	struct J9PlatformSignalInfo	platformSignalInfo;
-	uint32_t portLibrarySignalType;
+	uint64_t portLibrarySignalType;
 	void* handlerAddress;
 	void* handlerAddress2;
 	siginfo_t *sigInfo;

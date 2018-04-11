@@ -238,7 +238,7 @@ typedef struct J9UnixAsyncHandlerRecord {
 	OMRPortLibrary* portLib;
 	omrsig_handler_fn handler;
 	void *handler_arg;
-	uint32_t flags;
+	uint64_t flags;
 	struct J9UnixAsyncHandlerRecord	*next;
 } J9UnixAsyncHandlerRecord;
 
@@ -269,7 +269,7 @@ omrthread_tls_key_t tlsKey;
 omrthread_tls_key_t tlsKeyCurrentSignal;
 
 struct {
-	uint32_t portLibSignalNo;
+	uint64_t portLibSignalNo;
 	int	unixSignalNo;
 } signalMap[] =	{
 	{OMRPORT_SIG_FLAG_SIGSEGV, SIGSEGV},
@@ -281,15 +281,15 @@ struct {
 };
 
 static omrthread_t asynchSignalReporterThread = NULL;
-static int32_t registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t allowedSubsetOfFlags);
+static int32_t registerMasterHandlers(OMRPortLibrary *portLibrary, uint64_t flags, uint32_t allowedSubsetOfFlags);
 static void	removeAsyncHandlers(OMRPortLibrary* portLibrary);
-static uint32_t	mapUnixSignalToPortLib(uint32_t signalNo, siginfo_t *sigInfo);
+static uint64_t	mapUnixSignalToPortLib(uint32_t signalNo, siginfo_t *sigInfo);
 #if defined(OMR_PORT_ASYNC_HANDLER)
 static int asynchSignalReporter(void *userData);
 #endif
-static uint32_t	registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySignalNo, unix_sigaction handler);
+static uint32_t	registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint64_t portLibrarySignalNo, unix_sigaction handler);
 static uint32_t	destroySignalTools(OMRPortLibrary *portLibrary);
-static int32_t	mapPortLibSignalToUnix(uint32_t portLibSignal);
+static int32_t	mapPortLibSignalToUnix(uint64_t portLibSignal);
 static uint32_t	countInfoInCategory(struct OMRPortLibrary *portLibrary, void *info, uint32_t category);
 static void	sig_full_shutdown(struct OMRPortLibrary *portLibrary);
 static int32_t	initializeSignalTools(OMRPortLibrary *portLibrary);
@@ -298,9 +298,9 @@ void masterSynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo
 static void	masterASynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo, UDATA nullArg);
 
 int32_t
-omrsig_can_protect(struct OMRPortLibrary *portLibrary,  uint32_t flags)
+omrsig_can_protect(struct OMRPortLibrary *portLibrary, uint64_t flags)
 {
-	uint32_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN;
+	uint64_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN;
 
 	Trc_PRT_signal_omrsig_can_protect_entered(flags);
 
@@ -361,13 +361,13 @@ omrsig_info_count(struct OMRPortLibrary *portLibrary, void *info, uint32_t categ
  */
 int32_t
 omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void* fn_arg,
-					 omrsig_handler_fn handler, void* handler_arg, uint32_t flags, UDATA *result )
+					 omrsig_handler_fn handler, void* handler_arg, uint64_t flags, UDATA *result )
 {
 	struct J9SignalHandlerRecord thisRecord;
 	omrthread_t thisThread;
 	uint32_t rc = 0;
-	uint32_t flagsSignalsOnly;
-	uint32_t flagsWithoutMasterHandlers;
+	uint64_t flagsSignalsOnly;
+	uint64_t flagsWithoutMasterHandlers;
 	
 	Trc_PRT_signal_omrsig_protect_entered(fn, fn_arg, handler, handler_arg, flags);
 
@@ -459,7 +459,7 @@ omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void
 
 uint32_t
 omrsig_set_async_signal_handler(struct OMRPortLibrary* portLibrary, omrsig_handler_fn handler,
-							   void* handler_arg, uint32_t flags)
+							   void* handler_arg, uint64_t flags)
 {
 	uint32_t rc = 0;
 	J9UnixAsyncHandlerRecord *cursor;
@@ -552,19 +552,19 @@ omrsig_set_async_signal_handler(struct OMRPortLibrary* portLibrary, omrsig_handl
 }
 
 void *
-omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t portlibSignalFlag)
+omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t portlibSignalFlag)
 {
 	return NULL;
 }
 
-uint32_t
+uint64_t
 omrsig_map_os_signal_to_portlib_signal(struct OMRPortLibrary *portLibrary, uint32_t osSignalValue)
 {
 	return 0;
 }
 
 int32_t
-omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint32_t portlibSignalFlag)
+omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint64_t portlibSignalFlag)
 {
 	return -1;
 }
@@ -644,7 +644,7 @@ static int32_t J9THREAD_PROC
 asynchSignalReporter(void *userData) {
 
 	J9UnixAsyncHandlerRecord* cursor;
-	uint32_t asyncSignalFlag = 0;
+	uint64_t asyncSignalFlag = 0;
 	int result = 0;
 	omrthread_set_name(omrthread_self(), "Signal Reporter");
 
@@ -734,7 +734,7 @@ masterSynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo, UDA
 	uint32_t result = U_32_MAX;
 
 	if (NULL != thisThread) {
-		uint32_t portLibType;
+		uint64_t portLibType;
 		struct J9SignalHandlerRecord* thisRecord;
 		struct J9CurrentSignal currentSignal; 
 		struct J9CurrentSignal *previousSignal;
@@ -870,7 +870,7 @@ masterSynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo, UDA
 static void
 masterASynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo, UDATA nullArg)
 { 
-	uint32_t portLibSignalType;
+	uint64_t portLibSignalType;
 	portLibSignalType = mapUnixSignalToPortLib(signal, sigInfo);
 
 	/* Todo: default? */
@@ -911,7 +911,7 @@ masterASynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo, UD
  * @return 0 upon success, non-zero otherwise.
  */
 static uint32_t
-registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySignalNo,  unix_sigaction handler)
+registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint64_t portLibrarySignalNo, unix_sigaction handler)
 {
 	struct sigaction newAction;
 	int	unixSignalNo = mapPortLibSignalToUnix(portLibrarySignalNo);
@@ -1002,7 +1002,7 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
  *			Go ahead and write on it if it's there. If we have one, we'll store
  *			the signal value and the translated PIC into it.
  */
-uint32_t
+uint64_t
 mapUnixSignalToPortLib(uint32_t signalNo, siginfo_t *sigInfo)
 {
 	uint32_t index;
@@ -1056,7 +1056,7 @@ mapUnixSignalToPortLib(uint32_t signalNo, siginfo_t *sigInfo)
  * \return The corresponding Unix signal number or -1 if the portLibSignal could not be mapped
  */
 static int
-mapPortLibSignalToUnix(uint32_t portLibSignal)
+mapPortLibSignalToUnix(uint64_t portLibSignal)
 {
 	uint32_t index;
 
@@ -1086,10 +1086,10 @@ mapPortLibSignalToUnix(uint32_t portLibSignal)
  *			a signal that is not included in the allowedSubsetOfFlags
 */
 static int32_t
-registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t allowedSubsetOfFlags)
+registerMasterHandlers(OMRPortLibrary *portLibrary, uint64_t flags, uint32_t allowedSubsetOfFlags)
 {
-	uint32_t flagsSignalsOnly = 0;
-	uint32_t flagsWithoutHandlers = 0;
+	uint64_t flagsSignalsOnly = 0;
+	uint64_t flagsWithoutHandlers = 0;
 	unix_sigaction handler;
 
 	if (OMRPORT_SIG_FLAG_SIGALLSYNC == allowedSubsetOfFlags) {

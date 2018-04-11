@@ -51,7 +51,7 @@
 
 #define allocNameSize 64 /**< @internal buffer size for name function */
 
-static uintptr_t simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg);
+static uintptr_t simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg);
 static void removeDump(OMRPortLibrary *portLib, const char *filename, const char *testName);
 
 typedef struct simpleHandlerInfo {
@@ -273,7 +273,7 @@ TEST(PortDumpTest, dump_test_create_dump_from_signal_handler)
 
 
 static uintptr_t
-simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg)
+simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	simpleHandlerInfo *info = (simpleHandlerInfo *)handler_arg;

@@ -71,9 +71,9 @@ protected:
 };
 
 static uintptr_t
-simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg)
+simpleHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg)
 {
-	portTestEnv->log("A crash occured, signal handler invoked (type = 0x%x)\n", gpType);
+	portTestEnv->log("A crash occured, signal handler invoked (type = 0x%016.16llx)\n", gpType);
 	return OMRPORT_SIG_EXCEPTION_RETURN;
 }
 
