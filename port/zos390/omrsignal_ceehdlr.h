@@ -20,7 +20,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-int32_t omrsig_protect_ceehdlr(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result);
+int32_t omrsig_protect_ceehdlr(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result);
 uint32_t omrsig_info_ceehdlr(struct OMRPortLibrary *portLibrary, void *info, uint32_t category, int32_t index, const char **name, void **value);
 intptr_t omrsig_get_current_signal_ceehdlr(struct OMRPortLibrary *portLibrary);
 int32_t ceehdlr_startup(struct OMRPortLibrary *portLibrary);

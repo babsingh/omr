@@ -178,7 +178,7 @@ uintptr_t Get_Number_Of_CPUs();
 extern char **environ;
 
 static uintptr_t copyEnvToBuffer(struct OMRPortLibrary *portLibrary, void *args);
-static uintptr_t copyEnvToBufferSignalHandler(struct OMRPortLibrary *portLib, uint32_t gpType, void *gpInfo, void *unUsed);
+static uintptr_t copyEnvToBufferSignalHandler(struct OMRPortLibrary *portLib, uint64_t gpType, void *gpInfo, void *unUsed);
 
 static void setPortableError(OMRPortLibrary *portLibrary, const char *funcName, int32_t portlibErrno, int systemErrno);
 
@@ -2303,7 +2303,7 @@ omrsysinfo_limit_iterator_next(struct OMRPortLibrary *portLibrary, J9SysinfoLimi
 }
 
 static uintptr_t
-copyEnvToBufferSignalHandler(struct OMRPortLibrary *portLib, uint32_t gpType, void *gpInfo, void *unUsed)
+copyEnvToBufferSignalHandler(struct OMRPortLibrary *portLib, uint64_t gpType, void *gpInfo, void *unUsed)
 {
 	return OMRPORT_SIG_EXCEPTION_RETURN;
 }

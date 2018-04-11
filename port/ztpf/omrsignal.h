@@ -37,7 +37,7 @@ struct J9SignalHandlerRecord {
 	omrsig_handler_fn handler;
 	void *handler_arg;
 	jmp_buf	mark;			
-	uint32_t flags;
+	uint64_t flags;
 };
 
 typedef struct J9CurrentSignal {

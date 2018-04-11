@@ -78,7 +78,7 @@ static void setSigMaskTestInfo(SigMaskTestInfo *info, struct OMRPortLibrary *por
 static omrthread_t create_thread(struct OMRPortLibrary *portLibrary, omrthread_entrypoint_t entpoint, void *entarg);
 static BOOLEAN waitForEvent(const char *testName, SigMaskTestInfo *info, SignalEvent event, void *result, size_t size);
 static void sendEvent(SigMaskTestInfo *info, SignalEvent event, void *value, size_t size);
-static uintptr_t sigHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg);
+static uintptr_t sigHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg);
 static uintptr_t maskProtectedFunction(struct OMRPortLibrary *portLibrary, void *arg);
 static uintptr_t unmaskProtectedFunction(struct OMRPortLibrary *portLibrary, void *arg);
 static int sigMaskThread(void *arg);
@@ -194,13 +194,13 @@ sendEvent(SigMaskTestInfo *info, SignalEvent event, void *value, size_t size)
  * Signal handling function.
  */
 static uintptr_t
-sigHandlerFunction(struct OMRPortLibrary *portLibrary, uint32_t gpType, void *gpInfo, void *handler_arg)
+sigHandlerFunction(struct OMRPortLibrary *portLibrary, uint64_t gpType, void *gpInfo, void *handler_arg)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	SigMaskTestInfo *info = (SigMaskTestInfo *)handler_arg;
 	const char *testName = info->testName;
 
-	portTestEnv->log("%s\t:sigHandlerFunction invoked (type = 0x%x)\n", info->testName, gpType);
+	portTestEnv->log("%s\t:sigHandlerFunction invoked (type = 0x%016.16llx)\n", info->testName, gpType);
 
 	portTestEnv->changeIndent(-1);
 	validateGPInfo(OMRPORTLIB, gpType, sigHandlerFunction, gpInfo, testName);

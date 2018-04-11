@@ -538,7 +538,7 @@ omrsig_startup(struct OMRPortLibrary *portLibrary);
 extern J9_CFUNC uint32_t
 omrsig_get_options(struct OMRPortLibrary *portLibrary);
 extern J9_CFUNC int32_t
-omrsig_can_protect(struct OMRPortLibrary *portLibrary,  uint32_t flags);
+omrsig_can_protect(struct OMRPortLibrary *portLibrary, uint64_t flags);
 extern J9_CFUNC void
 omrsig_shutdown(struct OMRPortLibrary *portLibrary);
 extern J9_CFUNC uint32_t
@@ -546,15 +546,15 @@ omrsig_info_count(struct OMRPortLibrary *portLibrary, void *info, uint32_t categ
 extern J9_CFUNC int32_t
 omrsig_set_options(struct OMRPortLibrary *portLibrary, uint32_t options);
 extern J9_CFUNC int32_t
-omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result);
+omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result);
 extern J9_CFUNC uint32_t
-omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags);
+omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags);
 extern J9_CFUNC void *
-omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t portlibSignalFlag);
-extern J9_CFUNC uint32_t
+omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t portlibSignalFlag);
+extern J9_CFUNC uint64_t
 omrsig_map_os_signal_to_portlib_signal(struct OMRPortLibrary *portLibrary, uint32_t osSignalValue);
 extern J9_CFUNC int32_t
-omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint32_t portlibSignalFlag);
+omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint64_t portlibSignalFlag);
 extern J9_CFUNC uint32_t
 omrsig_info(struct OMRPortLibrary *portLibrary, void *info, uint32_t category, int32_t index, const char **name, void **value);
 extern J9_CFUNC int32_t
