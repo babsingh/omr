@@ -1389,17 +1389,17 @@ typedef struct OMRPortLibrary {
 	/** see @ref omrsignal.c::omrsig_shutdown "omrsig_shutdown"*/
 	void (*sig_shutdown)(struct OMRPortLibrary *portLibrary) ;
 	/** see @ref omrsignal.c::omrsig_protect "omrsig_protect"*/
-	int32_t (*sig_protect)(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result) ;
+	int32_t (*sig_protect)(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result) ;
 	/** see @ref omrsignal.c::omrsig_can_protect "omrsig_can_protect"*/
-	int32_t (*sig_can_protect)(struct OMRPortLibrary *portLibrary,  uint32_t flags) ;
+	int32_t (*sig_can_protect)(struct OMRPortLibrary *portLibrary, uint64_t flags) ;
 	/** see @ref omrsignal.c::omrsig_set_async_signal_handler "omrsig_set_async_signal_handler"*/
-	uint32_t (*sig_set_async_signal_handler)(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags) ;
+	uint32_t (*sig_set_async_signal_handler)(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags) ;
 	/** see @ref omrsignal.c::omrsig_set_single_async_signal_handler "omrsig_set_single_async_signal_handler"*/
-	void *(*sig_set_single_async_signal_handler)(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t portlibSignalFlag) ;
+	void *(*sig_set_single_async_signal_handler)(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t portlibSignalFlag) ;
 	/** see @ref omrsignal.c::omrsig_map_os_signal_to_portlib_signal "omrsig_map_os_signal_to_portlib_signal"*/
-	uint32_t (*sig_map_os_signal_to_portlib_signal)(struct OMRPortLibrary *portLibrary, uint32_t osSignalValue) ;
+	uint64_t (*sig_map_os_signal_to_portlib_signal)(struct OMRPortLibrary *portLibrary, uint32_t osSignalValue) ;
 	/** see @ref omrsignal.c::omrsig_map_portlib_signal_to_os_signal "omrsig_map_portlib_signal_to_os_signal"*/
-	int32_t (*sig_map_portlib_signal_to_os_signal)(struct OMRPortLibrary *portLibrary, uint32_t portlibSignalFlag) ;
+	int32_t (*sig_map_portlib_signal_to_os_signal)(struct OMRPortLibrary *portLibrary, uint64_t portlibSignalFlag) ;
 	/** see @ref omrsignal.c::omrsig_info "omrsig_info"*/
 	uint32_t (*sig_info)(struct OMRPortLibrary *portLibrary, void *info, uint32_t category, int32_t index, const char **name, void **value) ;
 	/** see @ref omrsignal.c::omrsig_info_count "omrsig_info_count"*/

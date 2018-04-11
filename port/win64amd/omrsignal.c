@@ -55,7 +55,7 @@ typedef struct UNWIND_INFO {
 
 typedef struct J9CurrentSignal {
 	EXCEPTION_POINTERS *exceptionInfo;
-	uint32_t portLibSignalType;
+	uint64_t portLibSignalType;
 } J9CurrentSignal;
 
 /* key to get the current synchronous signal */
@@ -68,7 +68,7 @@ struct J9SignalHandlerRecord {
 	omrsig_handler_fn handler;
 	void *handler_arg;
 	jmp_buf returnBuf;
-	uint32_t flags;
+	uint64_t flags;
 	BOOLEAN deferToTryExcept;
 };
 
@@ -76,7 +76,7 @@ typedef struct J9WinAMD64AsyncHandlerRecord {
 	OMRPortLibrary *portLib;
 	omrsig_handler_fn handler;
 	void *handler_arg;
-	uint32_t flags;
+	uint64_t flags;
 	struct J9WinAMD64AsyncHandlerRecord *next;
 } J9WinAMD64AsyncHandlerRecord;
 
@@ -108,8 +108,8 @@ static void sig_full_shutdown(struct OMRPortLibrary *portLibrary);
 static void destroySignalTools(OMRPortLibrary *portLibrary);
 static uint32_t addMasterVectoredExceptionHandler(struct OMRPortLibrary *portLibrary);
 static int32_t initializeSignalTools(OMRPortLibrary *portLibrary);
-static int structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, EXCEPTION_POINTERS *exceptionInfo);
-static int32_t runInTryExcept(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result);
+static int structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, EXCEPTION_POINTERS *exceptionInfo);
+static int32_t runInTryExcept(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result);
 
 uint32_t
 omrsig_info(struct OMRPortLibrary *portLibrary, void *info, uint32_t category, int32_t index, const char **name, void **value)
@@ -143,7 +143,7 @@ static int32_t
 runInTryExcept(struct OMRPortLibrary *portLibrary,
 			   omrsig_protected_fn fn, void *fn_arg,
 			   omrsig_handler_fn handler, void *handler_arg,
-			   uint32_t flags, uintptr_t *result)
+			   uint64_t flags, uintptr_t *result)
 {
 	__try {
 		*result = fn(portLibrary, fn_arg);
@@ -155,7 +155,7 @@ runInTryExcept(struct OMRPortLibrary *portLibrary,
 }
 
 int32_t
-omrsig_protect(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint32_t flags, uintptr_t *result)
+omrsig_protect(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void *fn_arg, omrsig_handler_fn handler, void *handler_arg, uint64_t flags, uintptr_t *result)
 {
 	struct J9SignalHandlerRecord thisRecord;
 	uintptr_t rc = 0;
@@ -229,7 +229,7 @@ omrsig_protect(struct OMRPortLibrary *portLibrary, omrsig_protected_fn fn, void 
 }
 
 uint32_t
-omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint32_t flags)
+omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler, void *handler_arg, uint64_t flags)
 {
 	uint32_t rc = 0;
 	J9WinAMD64AsyncHandlerRecord *cursor;
@@ -318,9 +318,9 @@ omrsig_map_portlib_signal_to_os_signal(struct OMRPortLibrary *portLibrary, uint3
 }
 
 int32_t
-omrsig_can_protect(struct OMRPortLibrary *portLibrary,  uint32_t flags)
+omrsig_can_protect(struct OMRPortLibrary *portLibrary, uint64_t flags)
 {
-	uint32_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION;
+	uint64_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION;
 
 	if (0 == (signalOptions & OMRPORT_SIG_OPTIONS_REDUCED_SIGNALS_SYNCHRONOUS)) {
 		supportedFlags |= OMRPORT_SIG_FLAG_SIGALLSYNC;
@@ -1023,15 +1023,15 @@ masterVectoredExceptionHandler(EXCEPTION_POINTERS *exceptionInfo)
  */
 static int
 structuredExceptionHandler(struct OMRPortLibrary *portLibrary, omrsig_handler_fn handler,
-						   void *handler_arg, uint32_t flags, EXCEPTION_POINTERS *exceptionInfo)
+						   void *handler_arg, uint64_t flags, EXCEPTION_POINTERS *exceptionInfo)
 {
-	uintptr_t result;
-	uint32_t type;
-	struct J9Win32SignalInfo j9info;
-	omrthread_t thisThread;
-	struct J9SignalHandlerRecord *thisRecord;
-	struct J9CurrentSignal currentSignal;
-	struct J9CurrentSignal *previousSignal;
+	uintptr_t result = 0;
+	uint64_t type = 0;
+	struct J9Win32SignalInfo j9info = {0};
+	omrthread_t thisThread = NULL;
+	struct J9SignalHandlerRecord *thisRecord = NULL;
+	struct J9CurrentSignal currentSignal = {0};
+	struct J9CurrentSignal *previousSignal = NULL;
 
 	if ((exceptionInfo->ExceptionRecord->ExceptionCode & (ERROR_SEVERITY_ERROR | APPLICATION_ERROR_MASK)) != ERROR_SEVERITY_ERROR) {
 		return EXCEPTION_CONTINUE_SEARCH;

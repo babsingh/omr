@@ -298,9 +298,9 @@ void masterSynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo
 static void	masterASynchSignalHandler(int signal, siginfo_t * sigInfo, void *contextInfo, UDATA nullArg);
 
 int32_t
-omrsig_can_protect(struct OMRPortLibrary *portLibrary,  uint32_t flags)
+omrsig_can_protect(struct OMRPortLibrary *portLibrary, uint64_t flags)
 {
-	uint32_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN;
+	uint64_t supportedFlags = OMRPORT_SIG_FLAG_MAY_RETURN;
 
 	Trc_PRT_signal_omrsig_can_protect_entered(flags);
 
@@ -361,13 +361,13 @@ omrsig_info_count(struct OMRPortLibrary *portLibrary, void *info, uint32_t categ
  */
 int32_t
 omrsig_protect(struct OMRPortLibrary *portLibrary,  omrsig_protected_fn fn, void* fn_arg,
-					 omrsig_handler_fn handler, void* handler_arg, uint32_t flags, UDATA *result )
+					 omrsig_handler_fn handler, void* handler_arg, uint64_t flags, UDATA *result )
 {
 	struct J9SignalHandlerRecord thisRecord;
 	omrthread_t thisThread;
 	uint32_t rc = 0;
-	uint32_t flagsSignalsOnly;
-	uint32_t flagsWithoutMasterHandlers;
+	uint64_t flagsSignalsOnly;
+	uint64_t flagsWithoutMasterHandlers;
 	
 	Trc_PRT_signal_omrsig_protect_entered(fn, fn_arg, handler, handler_arg, flags);
 
