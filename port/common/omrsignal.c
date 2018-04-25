@@ -172,7 +172,7 @@ omrsig_set_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsig_handl
 }
 
 
-/*
+/**
  * @brief Similar to omrsig_set_async_signal_handler. Refer to omrsig_set_async_signal_handler's description above.
  * Differences: 1) one omrsig_handler_fn handler is registered with a signal at any time instead of multiple handlers.
  * 2) The address to the old signal handler function is stored in oldOSHandler.
@@ -191,7 +191,7 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 	return OMRPORT_SIG_ERROR;
 }
 
-/*
+/**
  * @brief Given an OS signal value, return the corresponding port library signal flag.
  *
  * @param[in] portLibrary The port library
@@ -205,7 +205,7 @@ omrsig_map_os_signal_to_portlib_signal(struct OMRPortLibrary *portLibrary, uint3
 	return 0;
 }
 
-/*
+/**
  * @brief Given a port library signal flag, return the corresponding OS signal value.
  *
  * @param[in] portLibrary The port library
