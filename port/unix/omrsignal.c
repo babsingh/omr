@@ -489,12 +489,12 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 	J9UnixAsyncHandlerRecord **previousLink = NULL;
 	BOOLEAN foundHandler = FALSE;
 
-	Trc_PRT_signal_omrsig_set_single_async_signal_handler_entered(handler, handler_arg, portlibSignalFlag);
+//	Trc_PRT_signal_omrsig_set_single_async_signal_handler_entered(handler, handler_arg, portlibSignalFlag);
 
 	if (0 != portlibSignalFlag) {
 		/* For non-zero portlibSignalFlag, check if only one signal bit is set. Otherwise, fail. */
 		if (!OMR_IS_ONLY_ONE_BIT_SET(portlibSignalFlag)) {
-			Trc_PRT_signal_omrsig_set_single_async_signal_handler_error_multiple_signal_flags_found(portlibSignalFlag);
+//			Trc_PRT_signal_omrsig_set_single_async_signal_handler_error_multiple_signal_flags_found(portlibSignalFlag);
 			return OMRPORT_SIG_ERROR;
 		}
 	}
@@ -506,7 +506,7 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 		if (OMR_ARE_ANY_BITS_SET(portlibSignalFlag, OMRPORT_SIG_FLAG_SIGXFSZ) && OMR_ARE_ANY_BITS_SET(signalOptionsGlobal, OMRPORT_SIG_OPTIONS_SIGXFSZ)) {
 			rc = registerMasterHandlers(portLibrary, OMRPORT_SIG_FLAG_SIGXFSZ, OMRPORT_SIG_FLAG_SIGALLASYNC, oldOSHandler);
 		} else {
-			Trc_PRT_signal_omrsig_set_single_async_signal_handler_will_not_set_handler_due_to_Xrs(handler, handler_arg, portlibSignalFlag);
+//			Trc_PRT_signal_omrsig_set_single_async_signal_handler_will_not_set_handler_due_to_Xrs(handler, handler_arg, portlibSignalFlag);
 			rc = OMRPORT_SIG_ERROR;
 		}
 	} else {
@@ -515,7 +515,7 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 	omrthread_monitor_exit(registerHandlerMonitor);
 
 	if (0 != rc) {
-		Trc_PRT_signal_omrsig_set_single_async_signal_handler_exiting_did_nothing_possible_error(rc, handler, handler_arg, portlibSignalFlag);
+//		Trc_PRT_signal_omrsig_set_single_async_signal_handler_exiting_did_nothing_possible_error(rc, handler, handler_arg, portlibSignalFlag);
 		return rc;
 	}
 
@@ -540,11 +540,11 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 					 */
 					*previousLink = cursor->next;
 					portLibrary->mem_free_memory(portLibrary, cursor);
-					Trc_PRT_signal_omrsig_set_single_async_signal_handler_user_handler_removed(handler, handler_arg, portlibSignalFlag);
+//					Trc_PRT_signal_omrsig_set_single_async_signal_handler_user_handler_removed(handler, handler_arg, portlibSignalFlag);
 					break;
 				} else {
 					/* Update the listener with the new portlibSignalFlag */
-					Trc_PRT_signal_omrsig_set_single_async_signal_handler_user_handler_added_1(handler, handler_arg, portlibSignalFlag);
+//					Trc_PRT_signal_omrsig_set_single_async_signal_handler_user_handler_added_1(handler, handler_arg, portlibSignalFlag);
 					cursor->flags |= portlibSignalFlag;
 				}
 			} else {
@@ -568,7 +568,7 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 			record->next = NULL;
 
 			/* add the new record to the end of the list */
-			Trc_PRT_signal_omrsig_set_single_async_signal_handler_user_handler_added_2(handler, handler_arg, portlibSignalFlag);
+//			Trc_PRT_signal_omrsig_set_single_async_signal_handler_user_handler_added_2(handler, handler_arg, portlibSignalFlag);
 			*previousLink = record;
 		}
 	}
@@ -576,9 +576,9 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 	omrthread_monitor_exit(asyncMonitor);
 
 	if (NULL != oldOSHandler) {
-		Trc_PRT_signal_omrsig_set_single_async_signal_handler_exiting(rc, handler, handler_arg, portlibSignalFlag, *oldOSHandler);
+//		Trc_PRT_signal_omrsig_set_single_async_signal_handler_exiting(rc, handler, handler_arg, portlibSignalFlag, *oldOSHandler);
 	} else {
-		Trc_PRT_signal_omrsig_set_single_async_signal_handler_exiting(rc, handler, handler_arg, portlibSignalFlag, NULL);
+//		Trc_PRT_signal_omrsig_set_single_async_signal_handler_exiting(rc, handler, handler_arg, portlibSignalFlag, NULL);
 	}
 
 	return rc;
@@ -742,7 +742,7 @@ runHandlers(uint32_t asyncSignalFlag, int unixSignal)
 
 	while (NULL != cursor) {
 		if (OMR_ARE_ANY_BITS_SET(cursor->flags, asyncSignalFlag)) {
-			Trc_PRT_signal_omrsig_asynchSignalReporter_calling_handler(cursor->portLib, asyncSignalFlag, cursor->handler_arg);
+//			Trc_PRT_signal_omrsig_asynchSignalReporter_calling_handler(cursor->portLib, asyncSignalFlag, cursor->handler_arg);
 			cursor->handler(cursor->portLib, asyncSignalFlag, NULL, cursor->handler_arg);
 		}
 		cursor = cursor->next;
@@ -842,14 +842,14 @@ asynchSignalReporter(void *userData)
 			 * functions return errors because it may interfere with diagnostics
 			 * we are attempting to generate for earlier events.
 			 */
-			Trc_PRT_signal_omrsig_asynchSignalReporterThread_going_to_sleep();
+//			Trc_PRT_signal_omrsig_asynchSignalReporterThread_going_to_sleep();
 			pthread_mutex_lock(&wakeUpASyncReporterMutex);
 			pthread_cond_wait(&wakeUpASyncReporterCond, &wakeUpASyncReporterMutex);
 			pthread_mutex_unlock(&wakeUpASyncReporterMutex);
 		}
 #endif /* defined(J9ZOS390) */
 
-		Trc_PRT_signal_omrsig_asynchSignalReporter_woken_up();
+//		Trc_PRT_signal_omrsig_asynchSignalReporter_woken_up();
 	}
 
 	omrthread_monitor_enter(asyncReporterShutdownMonitor);
@@ -1251,10 +1251,10 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
 		/* Initialize oldAction. */
 		memset(&oldActions[unixSignalNo].action, 0, sizeof(struct sigaction));
 		if (OMRSIG_SIGACTION(unixSignalNo, &newAction, &oldActions[unixSignalNo].action)) {
-			Trc_PRT_signal_registerSignalHandlerWithOS_failed_to_registerHandler(portLibrarySignalNo, unixSignalNo, handler);
+//			Trc_PRT_signal_registerSignalHandlerWithOS_failed_to_registerHandler(portLibrarySignalNo, unixSignalNo, handler);
 			return OMRPORT_SIG_ERROR;
 		} else {
-			Trc_PRT_signal_registerSignalHandlerWithOS_registeredHandler1(portLibrarySignalNo, unixSignalNo, handler, oldActions[unixSignalNo].action.sa_sigaction);
+//			Trc_PRT_signal_registerSignalHandlerWithOS_registeredHandler1(portLibrarySignalNo, unixSignalNo, handler, oldActions[unixSignalNo].action.sa_sigaction);
 			oldActions[unixSignalNo].restore = 1;
 			if (NULL != oldOSHandler) {
 				*oldOSHandler = (void *)oldActions[unixSignalNo].action.sa_sigaction;
@@ -1264,10 +1264,10 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
 		struct sigaction oldAction;
 		memset(&oldAction, 0, sizeof(struct sigaction));
 		if (OMRSIG_SIGACTION(unixSignalNo, &newAction, &oldAction)) {
-			Trc_PRT_signal_registerSignalHandlerWithOS_failed_to_registerHandler(portLibrarySignalNo, unixSignalNo, handler);
+//			Trc_PRT_signal_registerSignalHandlerWithOS_failed_to_registerHandler(portLibrarySignalNo, unixSignalNo, handler);
 			return OMRPORT_SIG_ERROR;
 		} else {
-			Trc_PRT_signal_registerSignalHandlerWithOS_registeredHandler1(portLibrarySignalNo, unixSignalNo, handler, oldAction.sa_sigaction);
+//			Trc_PRT_signal_registerSignalHandlerWithOS_registeredHandler1(portLibrarySignalNo, unixSignalNo, handler, oldAction.sa_sigaction);
 			if (NULL != oldOSHandler) {
 				*oldOSHandler = (void *)oldAction.sa_sigaction;
 			}
@@ -1319,7 +1319,7 @@ mapUnixSignalToPortLib(uint32_t signalNo, siginfo_t *sigInfo)
 		}
 	}
 
-	Trc_PRT_signal_mapOSSignalToPortLib_ERROR_unknown_signal(signalNo);
+//	Trc_PRT_signal_mapOSSignalToPortLib_ERROR_unknown_signal(signalNo);
 	return 0;
 }
 
