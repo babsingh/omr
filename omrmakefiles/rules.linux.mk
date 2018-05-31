@@ -358,19 +358,19 @@ endif
 ifeq ($(OMR_OPTIMIZE),1)
     ifeq (x86,$(OMR_HOST_ARCH))
         ifeq ($(OMR_ENV_DATA64),1)
-            OPTIMIZATION_FLAGS+=-O3 -fno-strict-aliasing
+            OPTIMIZATION_FLAGS+=-O0 -g3 -fno-strict-aliasing
         else
-            OPTIMIZATION_FLAGS+=-O3 -fno-strict-aliasing -march=pentium4 -mtune=prescott
+            OPTIMIZATION_FLAGS+=-O0 -g3 -fno-strict-aliasing -march=pentium4 -mtune=prescott
         endif
     else
         ifeq (arm,$(OMR_HOST_ARCH))
-            OPTIMIZATION_FLAGS+=-O3 -fno-strict-aliasing
+            OPTIMIZATION_FLAGS+=-O0 -g3 -fno-strict-aliasing
         else ifeq (aarch64,$(OMR_HOST_ARCH))
             #TODO:AARCH64 Do not optimize just yet. we need debugging support until we are assured this run
-            OPTIMIZATION_FLAGS+=-O3 -fno-strict-aliasing
+            OPTIMIZATION_FLAGS+=-O0 -g3 -fno-strict-aliasing
         else
             ifeq (ppc,$(OMR_HOST_ARCH))
-                OPTIMIZATION_FLAGS+=-O3
+                OPTIMIZATION_FLAGS+=-O0 -g3
                 ifeq ($(OMR_ENV_LITTLE_ENDIAN),1)
                     OPTIMIZATION_FLAGS+=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
                     ifeq (xlc,$(OMR_TOOLCHAIN))
@@ -379,7 +379,7 @@ ifeq ($(OMR_OPTIMIZE),1)
                 endif
             else
                 ifeq (s390,$(OMR_HOST_ARCH))
-                    OPTIMIZATION_FLAGS+=-O3 -mtune=z10 -march=z9-109 -mzarch
+                    OPTIMIZATION_FLAGS+=-O0 -g3 -mtune=z10 -march=z9-109 -mzarch
                 else
                     OPTIMIZATION_FLAGS+=-O
                 endif
@@ -401,14 +401,12 @@ ifeq (1,$(USE_GNU_DEBUG))
 define LINK_C_SHARED_COMMAND
 $(CCLINKSHARED) -o $@ $(OBJECTS) $(LDFLAGS) $(MODULE_LDFLAGS) $(GLOBAL_LDFLAGS)
 $(OBJCOPY) --only-keep-debug $@ $@.dbg
-$(OBJCOPY) --strip-debug $@
 $(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
 endef
 
 define LINK_CXX_SHARED_COMMAND
 $(CXXLINKSHARED) -o $@ $(OBJECTS) $(LDFLAGS) $(MODULE_LDFLAGS) $(GLOBAL_LDFLAGS)
 $(OBJCOPY) --only-keep-debug $@ $@.dbg
-$(OBJCOPY) --strip-debug $@
 $(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
 endef
 
