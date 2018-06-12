@@ -157,6 +157,7 @@ static int mapPortLibSignalToOSSignal(uint32_t portLibSignal);
 static int32_t registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySignalNo, win_signal handler, void **oldOSHandler);
 static void updateSignalCount(int osSignalNo);
 static void masterASynchSignalHandler(int osSignalNo);
+static void removeAsyncHandlers(OMRPortLibrary *portLibrary);
 
 uint32_t
 omrsig_info(struct OMRPortLibrary *portLibrary, void *info, uint32_t category, int32_t index, const char **name, void **value)
@@ -1295,6 +1296,9 @@ sig_full_shutdown(struct OMRPortLibrary *portLibrary)
 			}
 		}
 
+		/* Remove elements in asyncHandlerList, and free the associated memory. */
+		removeAsyncHandlers(portLibrary);
+
 		omrthread_tls_free(tlsKey);
 		RemoveVectoredExceptionHandler(masterVectoredExceptionHandler);
 		vectoredExceptionHandlerInstalled = 0;
@@ -1509,4 +1513,41 @@ masterASynchSignalHandler(int osSignalNo)
 	 * be registered again after it is invoked.
 	 */
 	OMRSIG_SIGNAL(osSignalNo, masterASynchSignalHandler);
+}
+
+/**
+ * Remove elements in asyncHandlerList, and free the associated memory.
+ *
+ * @param[in] portLibrary the OMR port library
+ *
+ * @return void
+ */
+static void
+removeAsyncHandlers(OMRPortLibrary *portLibrary)
+{
+	/* clean up the list of async handlers */
+	J9WinAMD64AsyncHandlerRecord *cursor = NULL;
+	J9WinAMD64AsyncHandlerRecord **previousLink = NULL;
+
+	omrthread_monitor_enter(asyncMonitor);
+
+	/* wait until no signals are being reported */
+	while (asyncThreadCount > 0) {
+		omrthread_monitor_wait(asyncMonitor);
+	}
+
+	previousLink = &asyncHandlerList;
+	cursor = asyncHandlerList;
+	while (cursor) {
+		if (cursor->portLib == portLibrary) {
+			*previousLink = cursor->next;
+			portLibrary->mem_free_memory(portLibrary, cursor);
+			cursor = *previousLink;
+		} else {
+			previousLink = &cursor->next;
+ 			cursor = cursor->next;
+ 		}
+	}
+
+	omrthread_monitor_exit(asyncMonitor);
 }
