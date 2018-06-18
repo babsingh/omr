@@ -32,6 +32,8 @@
 #include "omrsig.h"
 #endif /* defined(OMRPORT_OMRSIG_SUPPORT) */
 
+#include "omrutil.h"
+
 /* UNWIND_CODE and UNWIND_INFO are not in the Windows SDK headers, but they are documented on MSDN */
 typedef union UNWIND_CODE {
 	struct {
@@ -117,6 +119,9 @@ static omrthread_monitor_t masterExceptionMonitor;
 /* access to this must be synchronized using masterExceptionMonitor */
 static uint32_t vectoredExceptionHandlerInstalled;
 
+/* Thread to invoke signal handlers for asynchronous signals. */
+static omrthread_t asynchSignalReporterThread;
+
 static J9WinAMD64AsyncHandlerRecord *asyncHandlerList;
 static omrthread_monitor_t asyncMonitor;
 static uint32_t asyncThreadCount;
@@ -158,6 +163,10 @@ static int32_t registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t
 static void updateSignalCount(int osSignalNo);
 static void masterASynchSignalHandler(int osSignalNo);
 static void removeAsyncHandlers(OMRPortLibrary *portLibrary);
+
+#if defined(OMR_PORT_ASYNC_HANDLER)
+static int J9THREAD_PROC asynchSignalReporter(void *userData);
+#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 
 uint32_t
 omrsig_info(struct OMRPortLibrary *portLibrary, void *info, uint32_t category, int32_t index, const char **name, void **value)
@@ -1266,8 +1275,26 @@ initializeSignalTools(OMRPortLibrary *portLibrary)
 		goto cleanup3;
 	}
 
+#if defined(OMR_PORT_ASYNC_HANDLER)
+	if (J9THREAD_SUCCESS != createThreadWithCategory(
+			&asynchSignalReporterThread,
+			256 * 1024,
+			J9THREAD_PRIORITY_MAX,
+			0,
+			&asynchSignalReporter,
+			NULL,
+			J9THREAD_CATEGORY_SYSTEM_THREAD)
+	) {
+		goto cleanup4;
+	}
+#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
+
 	return 0;
 
+#if defined(OMR_PORT_ASYNC_HANDLER)
+cleanup4:
+	j9sem_destroy(wakeUpASyncReporter);
+#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 cleanup3:
 	omrthread_monitor_destroy(registerHandlerMonitor);
 cleanup2:
@@ -1551,3 +1578,26 @@ removeAsyncHandlers(OMRPortLibrary *portLibrary)
 
 	omrthread_monitor_exit(asyncMonitor);
 }
+
+#if defined(OMR_PORT_ASYNC_HANDLER)
+/**
+ * This is the main body of the asynchSignalReporterThread. It is supposed to execute
+ * handlers (J9WinAMD64AsyncHandlerRecord->handler) associated to a signal once a
+ * signal is raised.
+ *
+ * @param[in] userData the user data provided during thread creation
+ *
+ * @return return statement won't be executed since the thread exits before executing
+ *         the return statement
+ */
+static int J9THREAD_PROC
+asynchSignalReporter(void *userData)
+{
+	omrthread_set_name(omrthread_self(), "Signal Reporter");
+
+	omrthread_exit(NULL);
+
+	/* Unreachable. */
+	return 0;
+}
+#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
