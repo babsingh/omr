@@ -350,28 +350,11 @@ omrsig_signalOS_internal(int signum, const struct sigaction *act, struct sigacti
 	if (NULL == signalOS) {
 		rc = -1;
 	} else {
-		sighandler_t handler = SIG_DFL;
-		/* signal() on WIN only takes SIG_IGN/SIG_DFL/function pointer as the second parameter (NULL is mapped to SIG_DFL).
-		 * If only querying the existing sighandler_t, use SIG_DFL to get the existing sighandler_t and then set it back.
-		 */
-		bool setAction = false;
-		if (NULL != act) {
-			handler = act->sa_handler;
-			setAction = true;
-		}
-		sighandler_t old = signalOS(signum, handler);
+		sighandler_t old = signalOS(signum, act->sa_handler);
 		if (SIG_ERR == old) {
 			rc = -1;
-		} else {
-			if (NULL != oldact) {
-				oldact->sa_handler = old;
-			}
-			if (!setAction) {
-				/* signal action was set to SIG_DFL, set old action back */
-				if (SIG_ERR == signalOS(signum, old)) {
-					rc = -1;
-				}
-			}
+		} else if (NULL != oldact) {
+			oldact->sa_handler = old;
 		}
 	}
 #endif /* defined(POSIX_SIGNAL) */
@@ -396,30 +379,9 @@ omrsig_sigaction_internal(int signum, const struct sigaction *act, struct sigact
 		}
 
 		SIGLOCK(sigMutex);
+		/* Get previous handler from slot. */
 		if (NULL != oldact) {
-			struct sigaction oact;
-			bool returnOldAction = false;
-			memset(&oact, 0, sizeof(struct sigaction));
-			rc = omrsig_signalOS_internal(signum, NULL, &oact);
-			if (-1 != rc) {
-#if defined(POSIX_SIGNAL)
-				if (OMR_ARE_NO_BITS_SET(oact.sa_flags, SA_SIGINFO)) {
-#endif /* defined(POSIX_SIGNAL) */
-					if (((sighandler_t)SIG_DFL == oact.sa_handler)
-						|| ((sighandler_t)SIG_IGN == oact.sa_handler)
-					) {
-						returnOldAction = true;
-					}
-#if defined(POSIX_SIGNAL)
-				}
-#endif /* defined(POSIX_SIGNAL) */
-			}
-			if (returnOldAction) {
-				*oldact = oact;
-			} else {
-				/* Get previous handler from slot. */
-				*oldact = *savedAction;
-			}
+			*oldact = *savedAction;
 		}
 
 		if (NULL != act) {
