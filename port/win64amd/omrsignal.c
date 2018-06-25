@@ -168,10 +168,8 @@ static void updateSignalCount(int osSignalNo);
 static void masterASynchSignalHandler(int osSignalNo);
 static void removeAsyncHandlers(OMRPortLibrary *portLibrary);
 
-#if defined(OMR_PORT_ASYNC_HANDLER)
 static int J9THREAD_PROC asynchSignalReporter(void *userData);
 static void runHandlers(uint32_t asyncSignalFlag);
-#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 
 static int32_t registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t allowedSubsetOfFlags, void **oldOSHandler);
 static int32_t setReporterPriority(OMRPortLibrary *portLibrary, uintptr_t priority);
@@ -1400,7 +1398,6 @@ initializeSignalTools(OMRPortLibrary *portLibrary)
 			goto cleanup4;
 	}
 
-#if defined(OMR_PORT_ASYNC_HANDLER)
 	if (J9THREAD_SUCCESS != createThreadWithCategory(
 			&asynchSignalReporterThread,
 			256 * 1024,
@@ -1412,14 +1409,11 @@ initializeSignalTools(OMRPortLibrary *portLibrary)
 	) {
 		goto cleanup5;
 	}
-#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 
 	return 0;
 
-#if defined(OMR_PORT_ASYNC_HANDLER)
 cleanup5:
 	omrthread_monitor_destroy(asyncReporterShutdownMonitor);
-#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 cleanup4:
 	j9sem_destroy(wakeUpASyncReporter);
 cleanup3:
@@ -1440,7 +1434,6 @@ sig_full_shutdown(struct OMRPortLibrary *portLibrary)
 
 	omrthread_monitor_enter(globalMonitor);
 	if (--attachedPortLibraries == 0) {
-#if defined(OMR_PORT_ASYNC_HANDLER)
 		/* Terminate asynchSignalReporterThread. */
 		omrthread_monitor_enter(asyncReporterShutdownMonitor);
 		shutDownASynchReporter = 1;
@@ -1449,7 +1442,6 @@ sig_full_shutdown(struct OMRPortLibrary *portLibrary)
 			omrthread_monitor_wait(asyncReporterShutdownMonitor);
 		}
 		omrthread_monitor_exit(asyncReporterShutdownMonitor);
-#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 
 		/* Register the original signal handlers, which were overwritten. */
 		for (index = 1; index < ARRAY_SIZE_SIGNALS; index++) {
@@ -1695,7 +1687,6 @@ removeAsyncHandlers(OMRPortLibrary *portLibrary)
 	omrthread_monitor_exit(asyncMonitor);
 }
 
-#if defined(OMR_PORT_ASYNC_HANDLER)
 /**
  * Given a port library signal flag, execute the associated handlers stored
  * within asyncHandlerList (list of J9WinAMD64AsyncHandlerRecord).
@@ -1779,7 +1770,6 @@ asynchSignalReporter(void *userData)
 	/* Unreachable. */
 	return 0;
 }
-#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 
 /**
  * Register the master handler for the signals in flags that don't have one.
