@@ -28,11 +28,9 @@
 #include "omrthread.h"
 #include "ut_omrport.h"
 
-#if defined(OMRPORT_OMRSIG_SUPPORT)
-#include "omrsig.h"
-#endif /* defined(OMRPORT_OMRSIG_SUPPORT) */
-
 #include "omrutil.h"
+
+#include <signal.h>
 
 /* UNWIND_CODE and UNWIND_INFO are not in the Windows SDK headers, but they are documented on MSDN */
 typedef union UNWIND_CODE {
@@ -1456,7 +1454,7 @@ sig_full_shutdown(struct OMRPortLibrary *portLibrary)
 		/* Register the original signal handlers, which were overwritten. */
 		for (index = 1; index < ARRAY_SIZE_SIGNALS; index++) {
 			if (handlerInfo[index].restore) {
-				OMRSIG_SIGNAL(index, handlerInfo[index].originalHandler);
+				signal(index, handlerInfo[index].originalHandler);
 				/* record that we no longer have a handler installed with the OS for this signal */
 				Trc_PRT_signal_sig_full_shutdown_deregistered_handler_with_OS(portLibrary, index);
 				handlerInfo[index].restore = 0;
@@ -1607,7 +1605,7 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
         return OMRPORT_SIG_ERROR;
     }
 
-    localOldOSHandler = OMRSIG_SIGNAL(osSignalNo, handler);
+    localOldOSHandler = signal(osSignalNo, handler);
     if (SIG_ERR == localOldOSHandler) {
         Trc_PRT_signal_registerSignalHandlerWithOS_failed_to_registerHandler(portLibrarySignalNo, osSignalNo, handler);
         return OMRPORT_SIG_ERROR;
@@ -1657,7 +1655,7 @@ masterASynchSignalHandler(int osSignalNo)
 	/* Signal handler is reset after invocation. So, the signal handler needs to
 	 * be registered again after it is invoked.
 	 */
-	OMRSIG_SIGNAL(osSignalNo, masterASynchSignalHandler);
+	signal(osSignalNo, masterASynchSignalHandler);
 }
 
 /**
