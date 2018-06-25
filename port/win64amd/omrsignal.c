@@ -1804,6 +1804,7 @@ asynchSignalReporter(void *userData)
 static int32_t
 registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t allowedSubsetOfFlags, void **oldOSHandler)
 {
+	uint32_t flagsSignalsOnly = 0;
 	win_signal handler = NULL;
 
 	if (OMRPORT_SIG_FLAG_SIGALLASYNC == allowedSubsetOfFlags) {
@@ -1812,7 +1813,9 @@ registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t all
 		return OMRPORT_SIG_ERROR;
 	}
 
-	if (OMR_ARE_ANY_BITS_SET(flags, allowedSubsetOfFlags)) {
+	flagsSignalsOnly = flags & allowedSubsetOfFlags;
+
+	if (0 != flagsSignalsOnly) {
 		/* registering some handlers */
 		uint32_t portSignalType = 0;
 
@@ -1825,11 +1828,13 @@ registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t all
 		 * or all asynchronous signal flags (OMRPORT_SIG_FLAG_SIGALLASYNC).
 		 */
 		for (portSignalType = OMRPORT_SIG_SMALLEST_SIGNAL_FLAG; portSignalType < allowedSubsetOfFlags; portSignalType = portSignalType << 1) {
-			/* Iterate through all the  signals and register the master handler for those that don't have one yet.
+			/* Iterate through all the  signals and register the master handler.
 			 * Register a master handler for this (portSignalType's) signal.
 			 */
-			if (0 != registerSignalHandlerWithOS(portLibrary, portSignalType, handler, oldOSHandler)) {
-				return OMRPORT_SIG_ERROR;
+			if (OMR_ARE_ALL_BITS_SET(flagsSignalsOnly, portSignalType)) {
+				if (0 != registerSignalHandlerWithOS(portLibrary, portSignalType, handler, oldOSHandler)) {
+					return OMRPORT_SIG_ERROR;
+				}
 			}
 		}
 	}
