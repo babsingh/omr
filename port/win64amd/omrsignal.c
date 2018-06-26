@@ -32,6 +32,9 @@
 
 #include <signal.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 /* UNWIND_CODE and UNWIND_INFO are not in the Windows SDK headers, but they are documented on MSDN */
 typedef union UNWIND_CODE {
 	struct {
@@ -368,7 +371,7 @@ omrsig_set_single_async_signal_handler(struct OMRPortLibrary *portLibrary, omrsi
 	int32_t rc = 0;
 	J9WinAMD64AsyncHandlerRecord *cursor = NULL;
 	J9WinAMD64AsyncHandlerRecord **previousLink = NULL;
-	BOOLEAN foundHandler = TRUE;
+	BOOLEAN foundHandler = FALSE;
 
 	Trc_PRT_signal_omrsig_set_single_async_signal_handler_entered(handler, handler_arg, portlibSignalFlag);
 
@@ -1378,6 +1381,14 @@ destroySignalTools(OMRPortLibrary *portLibrary)
 static int32_t
 initializeSignalTools(OMRPortLibrary *portLibrary)
 {
+#if defined(OMR_PORT_ASYNC_HANDLER)
+	fprintf(stdout, "win64amd: OMR_PORT_ASYNC_HANDLER enabled.\n");
+#endif /* defined(OMR_PORT_ASYNC_HANDLER) */
+
+#if defined(OMRPORT_OMRSIG_SUPPORT)
+	fprintf(stdout, "win64amd: OMRPORT_OMRSIG_SUPPORT enabled.\n");
+#endif /* defined(OMRPORT_OMRSIG_SUPPORT) */
+
 	if (omrthread_monitor_init_with_name(&asyncMonitor, 0, "portLibrary_omrsig_async_monitor")) {
 		goto error;
 	}
@@ -1409,6 +1420,7 @@ initializeSignalTools(OMRPortLibrary *portLibrary)
 	) {
 		goto cleanup5;
 	}
+	fprintf(stdout, "win64amd: thread successfully initialized.\n");
 
 	return 0;
 
@@ -1629,6 +1641,7 @@ updateSignalCount(int osSignalNo)
 {
 	addAtomic(&signalCounts[osSignalNo], 1);
 	j9sem_post(wakeUpASyncReporter);
+	fprintf(stdout, "win64amd: updated signal count - signal: %d - count - %p.\n", osSignalNo, signalCounts[osSignalNo]);
 }
 
 /**
@@ -1709,6 +1722,7 @@ runHandlers(uint32_t asyncSignalFlag)
 	while (NULL != cursor) {
 		if (OMR_ARE_ANY_BITS_SET(cursor->flags, asyncSignalFlag)) {
 			Trc_PRT_signal_omrsig_asynchSignalReporter_calling_handler(cursor->portLib, asyncSignalFlag, cursor->handler_arg);
+			fprintf(stdout, "win64amd: handler invoked %p for signal flag %d.\n", cursor->handler, asyncSignalFlag);
 			cursor->handler(cursor->portLib, asyncSignalFlag, NULL, cursor->handler_arg);
 		}
 		cursor = cursor->next;
@@ -1736,6 +1750,8 @@ asynchSignalReporter(void *userData)
 {
 	omrthread_set_name(omrthread_self(), "Signal Reporter");
 
+	fprintf(stdout, "win64amd: async reporter thread started.\n");
+
 	while (0 == shutDownASynchReporter) {
 		int osSignal = 1;
 		uint32_t asyncSignalFlag = 0;
@@ -1745,6 +1761,7 @@ asynchSignalReporter(void *userData)
 			uintptr_t signalCount = signalCounts[osSignal];
 
 			if (signalCount > 0) {
+				fprintf(stdout, "win64amd: signal %d received.\n", osSignal);
 				asyncSignalFlag = mapOSSignalToPortLib(osSignal);
 				runHandlers(asyncSignalFlag);
 				subtractAtomic(&signalCounts[osSignal], 1);
@@ -1758,9 +1775,12 @@ asynchSignalReporter(void *userData)
 
 		j9sem_wait(wakeUpASyncReporter);
 
+		fprintf(stdout, "win64amd: thread woken up.\n");
+
 		Trc_PRT_signal_omrsig_asynchSignalReporter_woken_up();
 	}
 
+	fprintf(stdout, "win64amd: async reporter thread shutting down.\n");
 	omrthread_monitor_enter(asyncReporterShutdownMonitor);
 	shutDownASynchReporter = 0;
 	omrthread_monitor_notify(asyncReporterShutdownMonitor);
