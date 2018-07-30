@@ -233,4 +233,11 @@
  */
 #cmakedefine OMR_THR_YIELD_ALG
 
+/**
+ * Enable OMRPORT_OMRSIG_SUPPORT globally.
+ */
+#if defined(OMR_PORT) && defined(OMR_OMRSIG)
+#define OMRPORT_OMRSIG_SUPPORT 1
+#endif /* defined(OMR_PORT) && defined(OMR_OMRSIG) */
+
 #endif /* !defined(OMRCFG_H_) */
