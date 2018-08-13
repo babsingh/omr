@@ -26,6 +26,8 @@
  * @brief Port Library
  */
 #include <string.h>
+#include <stdio.h>
+
 #include "omrport.h"
 #include "omrportpriv.h"
 #include "ut_omrport.h"
@@ -415,6 +417,8 @@ omrport_shutdown_library(struct OMRPortLibrary *portLibrary)
 #if defined(OMR_OPT_CUDA)
 	portLibrary->cuda_shutdown(portLibrary);
 #endif /* OMR_OPT_CUDA */
+	fprintf (stdout, "[OMR] omrport_shutdown_library\n");
+
 	portLibrary->introspect_shutdown(portLibrary);
 	portLibrary->sig_shutdown(portLibrary);
 	portLibrary->str_shutdown(portLibrary);

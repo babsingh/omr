@@ -25,6 +25,9 @@
  * @ingroup Port
  * @brief Signal handling
  */
+
+#include <stdio.h>
+
 #include "omrcfg.h"
 #include "omrport.h"
 #include "omrutil.h"
@@ -211,7 +214,7 @@ static struct {
 
 static omrthread_t asynchSignalReporterThread = NULL;
 static int32_t registerMasterHandlers(OMRPortLibrary *portLibrary, uint32_t flags, uint32_t allowedSubsetOfFlags, void **oldOSHandler);
-static void removeAsyncHandlers(OMRPortLibrary *portLibrary);
+//static void removeAsyncHandlers(OMRPortLibrary *portLibrary);
 static uint32_t mapOSSignalToPortLib(uint32_t signalNo, siginfo_t *sigInfo);
 #if defined(J9ZOS390)
 static intptr_t addAsyncSignalsToSet(sigset_t *ss);
@@ -223,7 +226,7 @@ static int J9THREAD_PROC asynchSignalReporter(void *userData);
 #endif /* defined(OMR_PORT_ASYNC_HANDLER) */
 
 static int32_t registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySignalNo, unix_sigaction handler, void **oldOSHandler);
-static uint32_t destroySignalTools(OMRPortLibrary *portLibrary);
+//static uint32_t destroySignalTools(OMRPortLibrary *portLibrary);
 static int mapPortLibSignalToOSSignal(uint32_t portLibSignal);
 static uint32_t countInfoInCategory(struct OMRPortLibrary *portLibrary, void *info, uint32_t category);
 static void sig_full_shutdown(struct OMRPortLibrary *portLibrary);
@@ -1170,7 +1173,7 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
 	memset(&newAction, 0, sizeof(struct sigaction));
 
 	/* do not block any signals */
-	if (0 != sigemptyset(&newAction.sa_mask)) {
+	if (0 != sigfillset(&newAction.sa_mask)) {
 		return OMRPORT_SIG_ERROR;
 	}
 
@@ -1560,23 +1563,23 @@ omrsig_set_reporter_priority(struct OMRPortLibrary *portLibrary, uintptr_t prior
 	return result;
 }
 
-static uint32_t
-destroySignalTools(OMRPortLibrary *portLibrary)
-{
-	omrthread_tls_free(tlsKey);
-	omrthread_tls_free(tlsKeyCurrentSignal);
-	omrthread_monitor_destroy(registerHandlerMonitor);
-	omrthread_monitor_destroy(asyncReporterShutdownMonitor);
-	omrthread_monitor_destroy(asyncMonitor);
-#if !defined(J9ZOS390)
-	SIGSEM_DESTROY(wakeUpASyncReporter);
-#else /* !defined(J9ZOS390) */
-	pthread_mutex_destroy(&wakeUpASyncReporterMutex);
-	pthread_cond_destroy(&wakeUpASyncReporterCond);
-#endif /* !defined(J9ZOS390) */
-
-	return 0;
-}
+//static uint32_t
+//destroySignalTools(OMRPortLibrary *portLibrary)
+//{
+//	omrthread_tls_free(tlsKey);
+//	omrthread_tls_free(tlsKeyCurrentSignal);
+//	omrthread_monitor_destroy(registerHandlerMonitor);
+//	omrthread_monitor_destroy(asyncReporterShutdownMonitor);
+//	omrthread_monitor_destroy(asyncMonitor);
+//#if !defined(J9ZOS390)
+//	SIGSEM_DESTROY(wakeUpASyncReporter);
+//#else /* !defined(J9ZOS390) */
+//	pthread_mutex_destroy(&wakeUpASyncReporterMutex);
+//	pthread_cond_destroy(&wakeUpASyncReporterCond);
+//#endif /* !defined(J9ZOS390) */
+//
+//	return 0;
+//}
 
 int32_t
 omrsig_set_options(struct OMRPortLibrary *portLibrary, uint32_t options)
@@ -1654,53 +1657,54 @@ static void
 sig_full_shutdown(struct OMRPortLibrary *portLibrary)
 {
 	omrthread_monitor_t globalMonitor = NULL;
-	uint32_t index = 1;
+//	uint32_t index = 1;
 
 	Trc_PRT_signal_sig_full_shutdown_enter(portLibrary);
 	globalMonitor = omrthread_global_monitor();
 
 	omrthread_monitor_enter(globalMonitor);
+	fprintf (stdout, "[OMR] sig_full_shutdown\n");
 	if (--attachedPortLibraries == 0) {
 
-		/* register the old actions we overwrote with our own */
-		for (index = 1; index < ARRAY_SIZE_SIGNALS; index++) {
-			if (oldActions[index].restore) {
-				uint32_t portlibSignalFlag = mapOSSignalToPortLib(index, 0);
-				OMRSIG_SIGACTION(index, &oldActions[index].action, NULL);
-				/* record that we no longer have a handler installed with the OS for this signal */
-				Trc_PRT_signal_sig_full_shutdown_deregistered_handler_with_OS(portLibrary, index);
-				signalsWithHandlers &= ~portlibSignalFlag;
-				signalsWithMasterHandlers &= ~portlibSignalFlag;
-				oldActions[index].restore = 0;
-			}
-		}
+//		/* register the old actions we overwrote with our own */
+//		for (index = 1; index < ARRAY_SIZE_SIGNALS; index++) {
+//			if (oldActions[index].restore) {
+//				uint32_t portlibSignalFlag = mapOSSignalToPortLib(index, 0);
+//				OMRSIG_SIGACTION(index, &oldActions[index].action, NULL);
+//				/* record that we no longer have a handler installed with the OS for this signal */
+//				Trc_PRT_signal_sig_full_shutdown_deregistered_handler_with_OS(portLibrary, index);
+//				signalsWithHandlers &= ~portlibSignalFlag;
+//				signalsWithMasterHandlers &= ~portlibSignalFlag;
+//				oldActions[index].restore = 0;
+//			}
+//		}
 
-		removeAsyncHandlers(portLibrary);
+//		removeAsyncHandlers(portLibrary);
 
-#if defined(OMR_PORT_ASYNC_HANDLER)
-		/* shut down the asynch reporter thread */
-		omrthread_monitor_enter(asyncReporterShutdownMonitor);
-
-#if defined(J9ZOS390)
-		pthread_mutex_lock(&wakeUpASyncReporterMutex);
-#endif /* defined(J9ZOS390) */
-		shutDownASynchReporter = 1;
-
-#if defined(J9ZOS390)
-		pthread_cond_signal(&wakeUpASyncReporterCond);
-		pthread_mutex_unlock(&wakeUpASyncReporterMutex);
-#else /* defined(J9ZOS390) */
-		SIGSEM_POST(wakeUpASyncReporter);
-#endif /* defined(J9ZOS390) */
-		while (shutDownASynchReporter) {
-			omrthread_monitor_wait(asyncReporterShutdownMonitor);
-		}
-		omrthread_monitor_exit(asyncReporterShutdownMonitor);
-
-#endif	/* defined(OMR_PORT_ASYNC_HANDLER) */
+//#if defined(OMR_PORT_ASYNC_HANDLER)
+//		/* shut down the asynch reporter thread */
+//		omrthread_monitor_enter(asyncReporterShutdownMonitor);
+//
+//#if defined(J9ZOS390)
+//		pthread_mutex_lock(&wakeUpASyncReporterMutex);
+//#endif /* defined(J9ZOS390) */
+//		shutDownASynchReporter = 1;
+//
+//#if defined(J9ZOS390)
+//		pthread_cond_signal(&wakeUpASyncReporterCond);
+//		pthread_mutex_unlock(&wakeUpASyncReporterMutex);
+//#else /* defined(J9ZOS390) */
+//		SIGSEM_POST(wakeUpASyncReporter);
+//#endif /* defined(J9ZOS390) */
+//		while (shutDownASynchReporter) {
+//			omrthread_monitor_wait(asyncReporterShutdownMonitor);
+//		}
+//		omrthread_monitor_exit(asyncReporterShutdownMonitor);
+//
+//#endif	/* defined(OMR_PORT_ASYNC_HANDLER) */
 
 		/* destroy all of the remaining monitors */
-		destroySignalTools(portLibrary);
+//		destroySignalTools(portLibrary);
 
 #if defined(OMR_PORT_ZOS_CEEHDLRSUPPORT)
 		ceehdlr_shutdown(portLibrary);
@@ -1711,35 +1715,35 @@ sig_full_shutdown(struct OMRPortLibrary *portLibrary)
 	Trc_PRT_signal_sig_full_shutdown_exiting(portLibrary);
 }
 
-static void
-removeAsyncHandlers(OMRPortLibrary *portLibrary)
-{
-	/* clean up the list of async handlers */
-	J9UnixAsyncHandlerRecord *cursor = NULL;
-	J9UnixAsyncHandlerRecord **previousLink = NULL;
-
-	omrthread_monitor_enter(asyncMonitor);
-
-	/* wait until no signals are being reported */
-	while (asyncThreadCount > 0) {
-		omrthread_monitor_wait(asyncMonitor);
-	}
-
-	previousLink = &asyncHandlerList;
-	cursor = asyncHandlerList;
-	while (cursor) {
-		if (cursor->portLib == portLibrary) {
-			*previousLink = cursor->next;
-			portLibrary->mem_free_memory(portLibrary, cursor);
-			cursor = *previousLink;
-		} else {
-			previousLink = &cursor->next;
-			cursor = cursor->next;
-		}
-	}
-
-	omrthread_monitor_exit(asyncMonitor);
-}
+//static void
+//removeAsyncHandlers(OMRPortLibrary *portLibrary)
+//{
+//	/* clean up the list of async handlers */
+//	J9UnixAsyncHandlerRecord *cursor = NULL;
+//	J9UnixAsyncHandlerRecord **previousLink = NULL;
+//
+//	omrthread_monitor_enter(asyncMonitor);
+//
+//	/* wait until no signals are being reported */
+//	while (asyncThreadCount > 0) {
+//		omrthread_monitor_wait(asyncMonitor);
+//	}
+//
+//	previousLink = &asyncHandlerList;
+//	cursor = asyncHandlerList;
+//	while (cursor) {
+//		if (cursor->portLib == portLibrary) {
+//			*previousLink = cursor->next;
+//			portLibrary->mem_free_memory(portLibrary, cursor);
+//			cursor = *previousLink;
+//		} else {
+//			previousLink = &cursor->next;
+//			cursor = cursor->next;
+//		}
+//	}
+//
+//	omrthread_monitor_exit(asyncMonitor);
+//}
 
 #if defined(OMRPORT_OMRSIG_SUPPORT)
 
