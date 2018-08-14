@@ -73,6 +73,8 @@ DDRGEN_STATIC_LIBS = \
   ddr-blobgen \
   ddr-macros
 
+MODULE_SHARED_LIBS += omrsig
+
 DEPENDENCIES += $(call buildStaticLibFilename,$(DDRGEN_STATIC_LIBS))
 MODULE_STATIC_LIBS += $(DDRGEN_STATIC_LIBS)
 

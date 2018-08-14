@@ -247,4 +247,8 @@
  */
 #undef OMR_VALGRIND_MEMCHECK
 
+#if defined(OMR_PORT) && defined(OMR_OMRSIG)
+#define OMRPORT_OMRSIG_SUPPORT
+#endif
+
 #endif /* !defined(OMRCFG_H_) */
