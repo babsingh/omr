@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2017, 2018 IBM Corp. and others
+# Copyright (c) 2017, 2019 IBM Corp. and others
 #
 # This program and the accompanying materials are made available under
 # the terms of the Eclipse Public License 2.0 which accompanies this
@@ -173,7 +173,7 @@ set(OMR_PORT_CAN_RESERVE_SPECIFIC_ADDRESS ON CACHE BOOL "TODO: Document")
 set(OMR_PORT_NUMA_SUPPORT OFF CACHE BOOL "TODO: Document")
 set(OMR_PORT_ALLOCATE_TOP_DOWN OFF CACHE BOOL "TODO: Document")
 set(OMR_PORT_ZOS_CEEHDLRSUPPORT OFF CACHE BOOL "TODO: Document")
-set(OMRPORT_OMRSIG_SUPPORT OFF CACHE BOOL "TODO: Document")
+set(OMRPORT_OMRSIG_SUPPORT ON CACHE BOOL "TODO: Document")
 set(OMR_PORT_ASYNC_HANDLER OFF CACHE BOOL "TODO: Document")
 
 

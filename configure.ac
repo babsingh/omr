@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2015, 2018 IBM Corp. and others
+# Copyright (c) 2015, 2019 IBM Corp. and others
 #
 # This program and the accompanying materials are made available under
 # the terms of the Eclipse Public License 2.0 which accompanies this
@@ -501,7 +501,7 @@ fi
 OMRCFG_DEFINE_FLAG_OFF([OMR_OPT_CUDA])
 OMRCFG_DEFINE_FLAG_OFF([OMR_PORT_ALLOCATE_TOP_DOWN])
 OMRCFG_DEFINE_FLAG_OFF([OMR_PORT_ZOS_CEEHDLRSUPPORT])
-OMRCFG_DEFINE_FLAG_OFF([OMRPORT_OMRSIG_SUPPORT])
+OMRCFG_DEFINE_FLAG_ON([OMRPORT_OMRSIG_SUPPORT])
 
 OMRCFG_DEFINE_FLAG([OMRTHREAD_LIB_AIX],[1],
 	[AS_IF([test "$OMR_HOST_OS" = aix],
