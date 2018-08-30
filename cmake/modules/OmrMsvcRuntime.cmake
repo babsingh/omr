@@ -22,7 +22,7 @@
 
 # Find the MSVC Runtime libraries.
 # Will set:
-#   OMR_MSVC_CRT: The name of the MSVC runtime DLL, or NOTFOUND.
+#   OMR_MSVC_CRT: The name of the MSVC runtime DLL only if a valid DLL is found.
 #
 # This module will determine the MSVC runtime names from the version of MSVC being used.
 
@@ -86,4 +86,6 @@ else()
 	set(msvc_crt NOTFOUND)
 endif()
 
-set(OMR_MSVC_CRT "${msvc_crt}" CACHE STRING "The MSVC runtime library")
+if(msvc_crt STREQUAL "NOTFOUND")
+	set(OMR_MSVC_CRT "${msvc_crt}" CACHE STRING "The MSVC runtime library")
+endif()

@@ -52,7 +52,9 @@ if(OMR_HOST_OS STREQUAL "win")
 	set_target_properties(omrsig
 		PROPERTIES LINK_FLAGS "-def:${CMAKE_CURRENT_BINARY_DIR}/omrsig.exportlist")
 
-	target_compile_definitions(omrsig PRIVATE -DMSVC_RUNTIME_DLL="${OMR_MSVC_CRT}")
+	if(OMR_MSVC_CRT)
+		target_compile_definitions(omrsig PRIVATE -DMSVC_RUNTIME_DLL="${OMR_MSVC_CRT}")
+	endif()
 endif()
 
 #Symbols exported from source makefile:
