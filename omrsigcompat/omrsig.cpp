@@ -42,6 +42,8 @@
 #include "omrsig.h"
 #include "omrsig_internal.hpp"
 
+#include <stdio.h>
+
 extern "C" {
 
 static OMR_SigData sigData[NSIG];
@@ -347,8 +349,10 @@ omrsig_signalOS_internal(int signum, const struct sigaction *act, struct sigacti
 	if (NULL == signalOS) {
 		signalOS = (SIGNAL)GetProcAddress(GetModuleHandle(TEXT(MSVC_RUNTIME_DLL)), "signal");
 	}
+	fprintf(stdout, "msvc dll: %s; signal: %d\n", MSVC_RUNTIME_DLL, signum);
 	if (NULL == signalOS) {
 		rc = -1;
+		fprintf(stdout, "signalOS not found\n");
 	} else {
 		sighandler_t handler = SIG_DFL;
 		/* signal() on WIN only takes SIG_IGN/SIG_DFL/function pointer as the second parameter (NULL is mapped to SIG_DFL).
