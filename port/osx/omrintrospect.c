@@ -36,6 +36,8 @@
 #include "omrport.h"
 #include "omrsignal_context.h"
 
+#include <stdio.h>
+
 #define SUSPEND_SIG SIGUSR1
 
 typedef struct PlatformWalkData {
@@ -112,21 +114,45 @@ suspendAllPreemptive(PlatformWalkData *data)
 	mach_port_t task = mach_task_self();
 	struct sigaction upcallAction;
 	int rc = 0;
+	sigset_t signalSet;
 
-	/* Install a signal handler to get thread context info from the handler. */
-	upcallAction.sa_sigaction = upcallHandler;
-	upcallAction.sa_flags = SA_SIGINFO | SA_RESTART;
-
-	if (-1 == sigaction(SUSPEND_SIG, &upcallAction, &data->oldHandler)) {
+	rc = sigaddset(&signalSet, SUSPEND_SIG);
+	if (0 != rc) {
 		RECORD_ERROR(data->state, SIGNAL_SETUP_ERROR, -1);
-		rc = -1;
-	} else if (data->oldHandler.sa_sigaction == upcallHandler) {
-		/* Handler's already installed so already iterating threads. We mustn't uninstall the handler
-		 * while cleaning as the thread that installed the initial handler will do so.
-		 */
-		memset(&data->oldHandler, 0, sizeof(struct sigaction));
-		RECORD_ERROR(data->state, CONCURRENT_COLLECTION, -1);
-		rc = -1;
+	}
+
+	if (0 == rc) {
+		rc = pthread_sigmask(SIG_UNBLOCK, &signalSet, NULL);
+		if (0 != rc) {
+			RECORD_ERROR(data->state, SIGNAL_SETUP_ERROR, -1);
+		}
+	}
+
+	if (0 == rc) {
+		rc = sigaddset(&upcallAction.sa_mask, SUSPEND_SIG);
+		if (0 != rc) {
+				RECORD_ERROR(data->state, SIGNAL_SETUP_ERROR, -1);
+		}
+	}
+
+	if (0 == rc) {
+		/* Install a signal handler to get thread context info from the handler. */
+		upcallAction.sa_sigaction = upcallHandler;
+		upcallAction.sa_flags = SA_SIGINFO | SA_RESTART;
+
+		if (-1 == sigaction(SUSPEND_SIG, &upcallAction, &data->oldHandler)) {
+			RECORD_ERROR(data->state, SIGNAL_SETUP_ERROR, -1);
+			rc = -1;
+			printf("failed to installed upcallHaner\n");
+		} else if (data->oldHandler.sa_sigaction == upcallHandler) {
+			/* Handler's already installed so already iterating threads. We mustn't uninstall the handler
+			 * while cleaning as the thread that installed the initial handler will do so.
+			 */
+			memset(&data->oldHandler, 0, sizeof(struct sigaction));
+			RECORD_ERROR(data->state, CONCURRENT_COLLECTION, -1);
+			rc = -1;
+			printf("failed upcallHandler already installed\n");
+		}
 	}
 
 	if (0 == rc) {
@@ -156,6 +182,9 @@ suspendAllPreemptive(PlatformWalkData *data)
 				}
 			}
 		} while ((threadCount > data->threadCount) && (0 == rc));
+
+		printf("threadCount - %u\n", threadCount);
+		printf("data->threadCount - %ld\n", data->threadCount);
 	}
 
 	return rc;
@@ -282,13 +311,17 @@ getThreadContext(J9ThreadWalkState *state)
 	PlatformWalkData *data = (PlatformWalkData *)state->platform_data;
 	thread_port_t thread = data->threadList[data->threadIndex];
 
+	printf("thread: %u, threadList: %p, threadIndex: %d\n", thread, data->threadList, data->threadIndex);
+
 	/* Create a pipe to allow the resumed thread to report it has completed
 	 * sending its context info.
 	 */
 	ret = pipe(pipeFileDescriptor);
 
 	if (0 == ret) {
-		ret = pthread_kill(pthread_from_mach_thread_np(thread), SUSPEND_SIG);
+		pthread_t pt = pthread_from_mach_thread_np(thread);
+		ret = pthread_kill(pt, SUSPEND_SIG);
+		printf("pt: %p\n", pt);
 	}
 
 	if (0 == ret) {
