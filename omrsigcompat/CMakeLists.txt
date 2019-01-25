@@ -106,9 +106,15 @@ target_compile_options(omrsig
 if(OMR_HOST_OS MATCHES "linux|osx")
 	target_link_libraries(omrsig PRIVATE dl)
 endif()
+
 if(OMR_HOST_OS STREQUAL "zos")
 	target_link_libraries(omrsig PRIVATE j9a2e)
 endif()
+
+if(OMR_TOOLCONFIG STREQUAL "gnu")
+	target_link_libraries(omrsig PUBLIC pthread)
+endif()
+
 #TODO ensure we are linking in the same way as source makefile:
 #MODULE_STATIC_LIBS += omrutil
 #ifneq (,$(findstring linux,$(OMR_HOST_OS)))
