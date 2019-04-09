@@ -808,7 +808,7 @@ infoForSignal(struct OMRPortLibrary *portLibrary, struct J9Win32SignalInfo *info
 		return OMRPORT_SIG_VALUE_32;
 	case OMRPORT_SIG_SIGNAL_TYPE:
 	case 1:
-		*name = "J9Generic_Signal";
+		*name = "Generic_Signal";
 		*value = &info->portLibType;
 		return OMRPORT_SIG_VALUE_32;
 	case OMRPORT_SIG_SIGNAL_ADDRESS:
