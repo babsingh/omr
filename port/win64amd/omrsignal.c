@@ -66,7 +66,7 @@ typedef struct OMRCurrentSignal {
 
 /* key to get the current synchronous signal */
 static omrthread_tls_key_t tlsKeyCurrentSignal;
-static RUNTIME_FUNCTION *j9SigProtectFunction = NULL;
+static RUNTIME_FUNCTION *sigProtectFunction = NULL;
 
 struct OMRSignalHandlerRecord {
 	struct OMRSignalHandlerRecord *previous;
@@ -576,7 +576,7 @@ omrsig_startup(struct OMRPortLibrary *portLibrary)
 	}
 
 	memset(&unwindHistoryTable, 0, sizeof(UNWIND_HISTORY_TABLE));
-	j9SigProtectFunction = RtlLookupFunctionEntry((ULONG64)omrsig_protect, &imageBase, &unwindHistoryTable);
+	sigProtectFunction = RtlLookupFunctionEntry((ULONG64)omrsig_protect, &imageBase, &unwindHistoryTable);
 
 	omrthread_monitor_exit(globalMonitor);
 
@@ -746,7 +746,7 @@ tryExceptHandlerExistsOnStack(OMRPortLibrary *portLibrary, CONTEXT *originalCont
 			unwindInfo = (UNWIND_INFO *)(runtimeFunction->UnwindData + imageBase);
 			flags = unwindInfo->Flags;
 
-			if (runtimeFunction == j9SigProtectFunction) {
+			if (runtimeFunction == sigProtectFunction) {
 				return FALSE;
 			} else if (UNW_FLAG_EHANDLER == flags) {
 				/* we found a try/except handler */
