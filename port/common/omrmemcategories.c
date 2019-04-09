@@ -147,7 +147,7 @@ OMRMemCategory *
 omrmem_get_category(struct OMRPortLibrary *portLibrary, uint32_t categoryCode)
 {
 
-	J9PortControlData *portControl = &(portLibrary->portGlobals->control);
+	OMRPortControlData *portControl = &(portLibrary->portGlobals->control);
 	if (categoryCode < OMRMEM_LANGUAGE_CATEGORY_LIMIT) {
 		if (categoryCode < portControl->language_memory_categories.numberOfCategories
 			&& NULL != portControl->language_memory_categories.categories[categoryCode]) {

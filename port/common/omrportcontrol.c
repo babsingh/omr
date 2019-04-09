@@ -187,7 +187,7 @@ omrport_control(struct OMRPortLibrary *portLibrary, const char *key, uintptr_t v
 	}
 
 	if (!strcmp(OMRPORT_CTLDATA_MEM_CATEGORIES_SET, key)) {
-		J9PortControlData *portControl = &portLibrary->portGlobals->control;
+		OMRPortControlData *portControl = &portLibrary->portGlobals->control;
 		OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 		/* Allow categories to be reset to NULL (for testing purposes) - but not reset to anything else */
 		if (0 == value) {

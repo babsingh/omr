@@ -49,14 +49,14 @@
 #define FD_BIAS 0
 #endif
 
-typedef struct J9PortControlData {
+typedef struct OMRPortControlData {
 	uintptr_t sig_flags;
 	OMRMemCategorySet language_memory_categories;
 	OMRMemCategorySet omr_memory_categories;
 #if defined(AIXPPC)
 	uintptr_t aix_proc_attr;
 #endif
-} J9PortControlData;
+} OMRPortControlData;
 
 #define J9NLS_NUM_HASH_BUCKETS  0x100
 
@@ -110,7 +110,7 @@ typedef struct J9CudaGlobalData {
 /* these port library globals are initialized to zero in omrmem_startup_basic */
 typedef struct OMRPortLibraryGlobalData {
 	void *corruptedMemoryBlock;
-	struct J9PortControlData control;
+	struct OMRPortControlData control;
 	struct J9NLSDataCache nls_data;
 	omrthread_tls_key_t tls_key;
 	MUTEX tls_mutex;
