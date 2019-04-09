@@ -42,7 +42,7 @@ infoForSignal(struct OMRPortLibrary *portLibrary, OMRUnixSignalInfo *info, int32
 
 	case OMRPORT_SIG_SIGNAL_TYPE:
 	case 0:
-		*name = "J9Generic_Signal_Number";
+		*name = "Generic_Signal_Number";
 		*value = &info->portLibrarySignalType;
 		return OMRPORT_SIG_VALUE_32;
 

@@ -468,7 +468,7 @@ infoForSignal_ceehdlr(struct OMRPortLibrary *portLibrary, J9LEConditionInfo *inf
 
 	case OMRPORT_SIG_SIGNAL_TYPE:
 	case 0:
-		*name = "J9Generic_Signal_Number";
+		*name = "Generic_Signal_Number";
 		*value = &info->portLibrarySignalType;
 		return OMRPORT_SIG_VALUE_32;
 	case 1:
