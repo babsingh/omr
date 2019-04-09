@@ -29,7 +29,7 @@
 #include "edcwccwi.h"
 #include "omrport.h"
 
-typedef struct J9ZOSLEConditionHandlerRecord {
+typedef struct OMRZOSLEConditionHandlerRecord {
 	struct OMRPortLibrary *portLibrary;
 	omrsig_handler_fn handler;
 	void *handler_arg;
@@ -37,6 +37,9 @@ typedef struct J9ZOSLEConditionHandlerRecord {
 	struct __jumpinfo farJumpInfo;
 	uint32_t flags;
 	uint32_t recursiveCheck; /* if this is set to 1, the handler corresponding to this record has been invoked recursively */
-} J9ZOSLEConditionHandlerRecord;
+} OMRZOSLEConditionHandlerRecord;
+
+/* TODO Remove once downstream projects are updated */
+#define J9ZOSLEConditionHandlerRecord OMRZOSLEConditionHandlerRecord
 
 #endif /* leconditionhandler_h */
