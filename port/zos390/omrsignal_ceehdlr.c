@@ -160,7 +160,7 @@ omrsig_le_condition_handler(_FEEDBACK *fc, _INT4 *token, _INT4 *leResult, _FEEDB
 	if (OMR_ARE_ANY_BITS_SET(thisRecord->flags, portlibSignalNo)
 	 || ((0 == portlibSignalNo) && OMR_ARE_ANY_BITS_SET(thisRecord->flags, OMRPORT_SIG_FLAG_SIGALLSYNC))
 	) {
-		OMRLEConditionInfo signalInfo;
+		J9LEConditionInfo j9Info;
 		_CEECIB *cib_ptr = NULL;
 		_FEEDBACK cibfc;
 
