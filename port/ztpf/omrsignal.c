@@ -213,11 +213,6 @@ ztpf_fireSignalHandlers(void *portlib)
 
 typedef  void (*unix_sigaction) (int, siginfo_t *, void *, UDATA);
 
-/* CMVC 96193
- * Prototyping here to avoid including j9protos.h
- */
-extern J9_CFUNC void issueWriteBarrier(void);
-
 /* Store the previous signal handlers, we need to restore them when we're done */
 static struct {
 	struct sigaction action;
