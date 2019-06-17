@@ -97,6 +97,7 @@ extern intptr_t omrthread_debug_syscall(const char *func, intptr_t retval);
 intptr_t omrthread_spinlock_acquire(omrthread_t self, omrthread_monitor_t monitor);
 intptr_t omrthread_spinlock_acquire_no_spin(omrthread_t self, omrthread_monitor_t monitor);
 uintptr_t omrthread_spinlock_swapState(omrthread_monitor_t monitor, uintptr_t newState);
+void omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor);
 
 /*
  * constants for profiling

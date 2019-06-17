@@ -84,6 +84,23 @@ typedef struct J9ThreadCustomSpinOptions {
 } J9ThreadCustomSpinOptions;
 #endif /* OMR_THR_CUSTOM_SPIN_OPTIONS */
 
+/* Cache align MCS nodes in the pool (OMRThreadMCSNodes->pool). */
+#define OMRTHREAD_MCS_NODE_ALIGNMENT 64
+
+/* Initialize pool (OMRThreadMCSNodes->pool) with minimum 10 MCS nodes */
+#define OMRTHREAD_MIN_MCS_NODES 10
+
+typedef struct OMRThreadMCSNode {
+	omrthread_mcs_node_t volatile nextLock;
+	omrthread_mcs_node_t volatile nextThread;
+	volatile uintptr_t blocked;
+} OMRThreadMCSNode;
+
+typedef struct OMRThreadMCSNodes {
+	omrthread_mcs_node_t head;
+	struct J9Pool *pool;
+} OMRThreadMCSNodes;
+
 typedef struct J9ThreadTracing {
 #if defined(OMR_THR_JLM_HOLD_TIMES)
 	uintptr_t pause_count;
@@ -119,10 +136,14 @@ typedef struct J9ThreadTracing {
     uintptr_t lockedmonitorcount; \
     omrthread_os_errno_t os_errno;
 
+#define J9_ABSTRACT_THREAD_FIELDS_4 \
+	omrthread_mcs_nodes_t mcsNodes;
+
 #define J9_ABSTRACT_THREAD_FIELDS \
 	J9_ABSTRACT_THREAD_FIELDS_1 \
 	J9_ABSTRACT_THREAD_FIELDS_2 \
-	J9_ABSTRACT_THREAD_FIELDS_3
+	J9_ABSTRACT_THREAD_FIELDS_3 \
+	J9_ABSTRACT_THREAD_FIELDS_4
 
 typedef struct J9ThreadMonitorTracing {
 	char *monitor_name;
@@ -190,6 +211,9 @@ typedef struct J9ThreadMonitorTracing {
 #define J9_ABSTRACT_MONITOR_FIELDS_7
 #endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) && defined(OMR_THR_THREE_TIER_LOCKING) */
 
+#define J9_ABSTRACT_MONITOR_FIELDS_8 \
+	omrthread_mcs_node_t tail;
+
 #define J9_ABSTRACT_MONITOR_FIELDS \
 	J9_ABSTRACT_MONITOR_FIELDS_1 \
 	J9_ABSTRACT_MONITOR_FIELDS_2 \
@@ -197,8 +221,8 @@ typedef struct J9ThreadMonitorTracing {
 	J9_ABSTRACT_MONITOR_FIELDS_4 \
 	J9_ABSTRACT_MONITOR_FIELDS_5 \
 	J9_ABSTRACT_MONITOR_FIELDS_6 \
-	J9_ABSTRACT_MONITOR_FIELDS_7
-
+	J9_ABSTRACT_MONITOR_FIELDS_7 \
+	J9_ABSTRACT_MONITOR_FIELDS_8
 
 /*
  * @ddr_namespace: map_to_type=J9ThreadAbstractMonitor
@@ -267,6 +291,7 @@ typedef struct J9AbstractThread {
 #define J9THREAD_ERR_CANT_ALLOC_CREATE_ATTR  8
 #define J9THREAD_ERR_CANT_ALLOC_STACK  9
 #define J9THREAD_ERR_INVALID_SCHEDPOLICY  10
+#define J9THREAD_ERR_CANT_ALLOC_MCS_NODES  11
 
 /* return values from omrthread_attr functions */
 #define J9THREAD_ERR_NOMEMORY  11 /* memory allocation failed */
