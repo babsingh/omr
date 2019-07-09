@@ -195,6 +195,134 @@ omrthread_spinlock_swapState(omrthread_monitor_t monitor, uintptr_t newState)
 	return oldState;
 }
 
+#if defined(OMR_THR_MCS_LOCKS)
+intptr_t
+omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode)
+{
+	ASSERT(mcsNode != NULL);
+	intptr_t result = -1;
+
+	mcsNode->queueNext = NULL;
+
+	omrthread_mcs_node_t predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::lockCompareExchange(
+			(volatile uintptr_t *)&monitor->queueTail,
+			(uintptr_t)monitor->queueTail,
+			(uintptr_t)mcsNode);
+
+	if (NULL != predecessor) {
+		mcsNode->blocked = 1;
+		VM_AtomicSupport::lockCompareExchange(
+					(volatile uintptr_t *)&predecessor->queueNext,
+					(uintptr_t)predecessor->queueNext,
+					(uintptr_t)mcsNode);
+
+		for (uintptr_t spinCount3 = monitor->spinCount3; spinCount3 > 0; spinCount3--) {
+			for (uintptr_t spinCount2 = monitor->spinCount2; spinCount2 > 0; spinCount2--) {
+				if (0 == VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->blocked, (uintptr_t)0)) {
+					goto lockAcquired;
+				}
+				/* Stop spinning if adaptive spin heuristic disables spinning */
+				if (OMR_ARE_ALL_BITS_SET(monitor->flags, J9THREAD_MONITOR_DISABLE_SPINNING)) {
+					goto exit;
+				}
+				VM_AtomicSupport::yieldCPU();
+				/* begin tight loop */
+				for (uintptr_t spinCount1 = monitor->spinCount1; spinCount1 > 0; spinCount1--) {
+					VM_AtomicSupport::nop();
+				} /* end tight loop */
+			}
+#if defined(OMR_THR_YIELD_ALG)
+			omrthread_yield_new(spinCount3);
+#else /* OMR_THR_YIELD_ALG */
+			omrthread_yield();
+#endif /* OMR_THR_YIELD_ALG */
+		}
+	} else {
+lockAcquired:
+		monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_OWNED;
+		result = 0;
+		if (NULL == self->mcsNodes->stackHead) {
+			self->mcsNodes->stackHead = mcsNode;
+			mcsNode->stackNext = NULL;
+		} else {
+			omrthread_mcs_node_t oldMCSNode = self->mcsNodes->stackHead;
+			self->mcsNodes->stackHead = mcsNode;
+			mcsNode->stackNext = oldMCSNode;
+		}
+	}
+
+exit:
+	return result;
+}
+
+intptr_t
+omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode)
+{
+	ASSERT(mcsNode != NULL);
+
+	intptr_t result = -1;
+	uintptr_t oldState = 0;
+	mcsNode->queueNext = NULL;
+	mcsNode->blocked = 0;
+
+	if (oldState == VM_AtomicSupport::lockCompareExchange((volatile uintptr_t *)&monitor->queueTail, (uintptr_t)oldState, (uintptr_t)mcsNode)) {
+		monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_OWNED;
+		if (NULL == self->mcsNodes->stackHead) {
+			self->mcsNodes->stackHead = mcsNode;
+			mcsNode->stackNext = NULL;
+		} else {
+			omrthread_mcs_node_t oldMCSNode = self->mcsNodes->stackHead;
+			self->mcsNodes->stackHead = mcsNode;
+			mcsNode->stackNext = oldMCSNode;
+		}
+		result = 0;
+	}
+
+	return result;
+}
+
+void
+omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor)
+{
+	omrthread_mcs_node_t mcsNode = self->mcsNodes->stackHead;
+	ASSERT(mcsNode != NULL);
+
+	omrthread_mcs_node_t successor = (omrthread_mcs_node_t)VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->queueNext, (uintptr_t)0);
+	if (NULL == successor) {
+		uintptr_t newState = 0;
+		if ((uintptr_t)mcsNode == VM_AtomicSupport::lockCompareExchange((volatile uintptr_t *)&monitor->queueTail, (uintptr_t)mcsNode, newState)) {
+			monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_UNOWNED;
+			goto lockReleased;
+		}
+		while (NULL == (successor = (omrthread_mcs_node_t)VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->queueNext, (uintptr_t)0)));
+	}
+	monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_UNOWNED;
+	successor->blocked = 0;
+
+lockReleased:
+	self->mcsNodes->stackHead = mcsNode->stackNext;
+
+	mcsNode->stackNext = NULL;
+	mcsNode->queueNext = NULL;
+
+	/* Return the MCS node to the thread's MCS node pool since it is no longer used. */
+	omrthread_mcs_node_free(self, mcsNode);
+}
+
+omrthread_mcs_node_t
+omrthread_mcs_node_allocate(omrthread_t self)
+{
+	return (omrthread_mcs_node_t)pool_newElement(self->mcsNodes->pool);
+}
+
+void
+omrthread_mcs_node_free(omrthread_t self, omrthread_mcs_node_t mcsNode)
+{
+	ASSERT(mcsNode != NULL);
+	pool_removeElement(self->mcsNodes->pool, mcsNode);
+}
+#endif /* defined(OMR_THR_MCS_LOCKS) */
+
 #endif /* OMR_THR_THREE_TIER_LOCKING */
 
 }

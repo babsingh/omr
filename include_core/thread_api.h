@@ -1447,6 +1447,23 @@ omrthread_monitor_pin(omrthread_monitor_t monitor, omrthread_t self);
 void
 omrthread_monitor_unpin(omrthread_monitor_t monitor, omrthread_t self);
 
+#if defined(OMR_THR_MCS_LOCKS)
+intptr_t
+omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode);
+
+intptr_t
+omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode);
+
+void
+omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor);
+
+omrthread_mcs_node_t
+omrthread_mcs_node_allocate(omrthread_t self);
+
+void
+omrthread_mcs_node_free(omrthread_t self, omrthread_mcs_node_t mcsNode);
+#endif /* defined(OMR_THR_MCS_LOCKS) */
+
 /* forward struct definition */
 struct J9ThreadLibrary;
 

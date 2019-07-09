@@ -270,10 +270,21 @@ define WRITE_COMMON_THREAD_EXPORTS
 @echo j9thread_tls_get >>$@
 endef
 
+ifeq (1,$(OMR_THR_MCS_LOCKS))
+define WRITE_MCS_LOCK_EXPORTS
+@echo omrthread_mcs_lock >>$@
+@echo omrthread_mcs_trylock >>$@
+@echo omrthread_mcs_unlock >>$@
+@echo omrthread_mcs_node_allocate >>$@
+@echo omrthread_mcs_node_free >>$@
+endef
+endif
+
 define WRITE_THREAD_EXPORTS
 $(WRITE_COMMON_THREAD_EXPORTS)
 $(WRITE_ZOS_THREAD_EXPORTS)
 $(WRITE_JLM_THREAD_EXPORTS)
 $(WRITE_ADAPTIVE_SPIN_THREAD_EXPORTS)
 $(WRITE_TRACING_THREAD_EXPORTS)
+$(WRITE_MCS_LOCK_EXPORTS)
 endef

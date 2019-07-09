@@ -162,6 +162,16 @@ omr_add_exports(j9thr_obj
 	j9thread_tls_get
 )
 
+if(OMR_THR_MCS_LOCKS)
+	omr_add_exports(j9thr_obj
+		omrthread_mcs_lock
+		omrthread_mcs_trylock
+		omrthread_mcs_unlock
+		omrthread_mcs_node_allocate
+		omrthread_mcs_node_free
+	)
+endif()
+	
 if(OMR_OS_ZOS)
 	omr_add_exports(j9thr_obj
 		omrthread_get_os_errno2
