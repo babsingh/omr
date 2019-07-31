@@ -26,6 +26,7 @@ extern "C" {
 #include <stdio.h>
 #include "thrtypes.h"
 #include "threaddef.h"
+#include "ut_j9thr.h"
 
 void
 omrthread_monitor_pin(omrthread_monitor_t monitor, omrthread_t self)
@@ -208,11 +209,12 @@ omrthread_spinlock_swapState(omrthread_monitor_t monitor, uintptr_t newState)
 intptr_t
 omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode)
 {
-	ASSERT(mcsNode != NULL);
+	Assert_THR_true(mcsNode != NULL);
 	intptr_t result = -1;
 
 	/* Initialize the MCS node. */
 	mcsNode->queueNext = NULL;
+	mcsNode->monitor = NULL;
 
 	printf("%d: mcs_lock_enter: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
 
@@ -267,6 +269,9 @@ lockAcquired:
 		/* monitor->spinlockState is maintained for compatibility with the existing omrthread API. */
 		monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_OWNED;
 		result = 0;
+
+		mcsNode->monitor = monitor;
+
 		/* Each omrthread_t maintains a stack of MCS nodes in case it acquires multiple locks incrementally.
 		 * After the lock is acquired, the MCS node is pushed to the thread's MCS node stack. Assumption:
 		 * the locks are acquired and released in order. Example:
@@ -289,7 +294,7 @@ lockAcquired:
 			self->mcsNodes->stackHead = mcsNode;
 			mcsNode->stackNext = oldMCSNode;
 		}
-		printf("%d: mcs_lock_acquired: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
+		printf("%d: mcs_lock_acquired: monitor - %s, state - %zu, mcsNode - %p, mcsNode->monitor - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode, mcsNode->monitor);
 	}
 
 exit:
@@ -308,7 +313,7 @@ exit:
 intptr_t
 omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode)
 {
-	ASSERT(mcsNode != NULL);
+	Assert_THR_true(mcsNode != NULL);
 
 	printf("%d: mcs_lock_try_enter: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
 
@@ -318,6 +323,7 @@ omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_m
 	/* Initialize the MCS node. */
 	mcsNode->queueNext = NULL;
 	mcsNode->blocked = 0;
+	mcsNode->monitor = NULL;
 
 	/* If the monitor->queueTail pointer is NULL (no-one is waiting to acquire the lock), then it is
 	 * swapped with the mcsNode pointer, and the lock is acquired. */
@@ -328,6 +334,8 @@ omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_m
 	) {
 		/* monitor->spinlockState is maintained for compatibility with the existing omrthread API. */
 		monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_OWNED;
+
+		mcsNode->monitor = monitor;
 
 		/* Each omrthread_t maintains a stack of MCS nodes in case it acquires multiple locks incrementally.
 		 * After the lock is acquired, the MCS node is pushed to the thread's MCS node stack. Assumption:
@@ -351,7 +359,7 @@ omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_m
 			self->mcsNodes->stackHead = mcsNode;
 			mcsNode->stackNext = oldMCSNode;
 		}
-		printf("%d: mcs_lock_try_acquired: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
+		printf("%d: mcs_lock_try_acquired: monitor - %s, state - %zu, mcsNode - %p, mcsNode->monitor - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode, mcsNode->monitor);
 		result = 0;
 	} else {
 		printf("%d: mcs_lock_try_not_acquired: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
@@ -375,9 +383,18 @@ omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor)
 	 * Refer to the assumption stated in omrthread_mcs_lock and omrthread_mcs_trylock.
 	 */
 	omrthread_mcs_node_t mcsNode = self->mcsNodes->stackHead;
-	ASSERT(mcsNode != NULL);
+	omrthread_mcs_node_t prevMcsNode = mcsNode;
+	while (mcsNode->monitor != monitor) {
+		mcsNode = mcsNode->stackNext;
+		if (mcsNode->monitor != monitor) {
+			prevMcsNode = mcsNode;
+		}
+	}
 
-	printf("%d: mcs_unlock_enter: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
+	Assert_THR_true(mcsNode != NULL);
+	Assert_THR_true(mcsNode->monitor == monitor);
+
+	printf("%d: mcs_unlock_enter: monitor - %s, state - %zu, mcsNode - %p, mcsNode->monitor - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode, mcsNode->monitor);
 
 	/* Get the successor of the mcsNode. */
 	omrthread_mcs_node_t successor = (omrthread_mcs_node_t)VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->queueNext, (uintptr_t)0);
@@ -406,7 +423,11 @@ lockReleased:
 	printf("%d: mcs_unlock_released: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
 
 	/* Pop the mcsNode from the thread's MCS node stack. */
-	self->mcsNodes->stackHead = mcsNode->stackNext;
+	if (mcsNode == self->mcsNodes->stackHead) {
+		self->mcsNodes->stackHead = mcsNode->stackNext;
+	} else {
+		prevMcsNode->stackNext = mcsNode->stackNext;
+	}
 
 	/* Clear the fields of the mcsNode. */
 	mcsNode->stackNext = NULL;
@@ -443,7 +464,7 @@ omrthread_mcs_node_allocate(omrthread_t self)
 void
 omrthread_mcs_node_free(omrthread_t self, omrthread_mcs_node_t mcsNode)
 {
-	ASSERT(mcsNode != NULL);
+	Assert_THR_true(mcsNode != NULL);
 	pool_removeElement(self->mcsNodes->pool, mcsNode);
 }
 #endif /* defined(OMR_THR_MCS_LOCKS) */
