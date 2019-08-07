@@ -203,40 +203,46 @@ omrthread_spinlock_swapState(omrthread_monitor_t monitor, uintptr_t newState)
  * @param[in] self the current omrthread_t
  * @param[in] monitor the monitor to be acquired
  * @param[in] mcsNode the MCS node belonging to self
+ * @param[in] retry specifies if it is the second attempt to acquire the lock
  *
  * @return 0 on success, -1 on failure
  */
 intptr_t
-omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode)
+omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_node_t mcsNode, BOOLEAN retry)
 {
 	Assert_THR_true(mcsNode != NULL);
 	intptr_t result = -1;
+	omrthread_mcs_node_t predecessor = NULL;
 
-	/* Initialize the MCS node. */
-	mcsNode->queueNext = NULL;
-	mcsNode->monitor = NULL;
+	if (!retry) {
+		/* Initialize the MCS node. */
+		mcsNode->queueNext = NULL;
+		mcsNode->monitor = NULL;
 
-	//printf("%d: mcs_lock_enter: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
+		//printf("%d: mcs_lock_enter: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
 
-	/* Install the mcsNode at the tail of the MCS lock queue (monitor->queueTail). */
-	omrthread_mcs_node_t predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::lockCompareExchange(
-			(volatile uintptr_t *)&monitor->queueTail,
-			(uintptr_t)monitor->queueTail,
-			(uintptr_t)mcsNode);
+		/* Install the mcsNode at the tail of the MCS lock queue (monitor->queueTail). */
+		predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::lockCompareExchange(
+				(volatile uintptr_t *)&monitor->queueTail,
+				(uintptr_t)monitor->queueTail,
+				(uintptr_t)mcsNode);
+	}
 
 	//printf("%d: mcs_lock_enter: monitor - %s %p, state - %zu, mcsNode - %p, predecessor - %p, queueTail - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, predecessor, monitor->queueTail);
 
-	if (NULL != predecessor) {
+	if ((NULL != predecessor) || retry) {
 		/* If a predecessor MCS node exists, then the current thread blocks (waits) until it receives
 		 * a notification from the thread that owns the predecessor MCS node.
 		 */
-		mcsNode->blocked = 1;
+		if (!retry) {
+			mcsNode->blocked = 1;
 
-		/* Enqueue the mcsNode next to the predecessor node in the MCS lock queue. */
-		VM_AtomicSupport::lockCompareExchange(
-					(volatile uintptr_t *)&predecessor->queueNext,
-					(uintptr_t)predecessor->queueNext,
-					(uintptr_t)mcsNode);
+			/* Enqueue the mcsNode next to the predecessor node in the MCS lock queue. */
+			VM_AtomicSupport::lockCompareExchange(
+						(volatile uintptr_t *)&predecessor->queueNext,
+						(uintptr_t)predecessor->queueNext,
+						(uintptr_t)mcsNode);
+		}
 
 		/* Three-tier busy-wait loop which checks if the mcsNode->blocked value is reset by the
 		 * thread that owns the predecessor node.
