@@ -3907,7 +3907,7 @@ monitor_enter_three_tier(omrthread_t self, omrthread_monitor_t monitor, BOOLEAN 
 	ASSERT(monitor->owner != self);
 	ASSERT(FREE_TAG != monitor->count);
 
-	printf("%d: enter (monitor_enter_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+	//printf("%d: enter (monitor_enter_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 
 	while (1) {
 #if defined(OMR_THR_MCS_LOCKS)
@@ -3935,7 +3935,7 @@ monitor_enter_three_tier(omrthread_t self, omrthread_monitor_t monitor, BOOLEAN 
 		}
 #endif /* !defined(OMR_THR_MCS_LOCKS) */
 
-		printf("%d: blocked (monitor_enter_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+		//printf("%d: blocked (monitor_enter_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 		blockedCount++;
 
 		THREAD_LOCK(self, CALLER_MONITOR_ENTER_THREE_TIER2);
@@ -3986,7 +3986,7 @@ monitor_enter_three_tier(omrthread_t self, omrthread_monitor_t monitor, BOOLEAN 
 			THREAD_UNLOCK(self);
 		}
 
-		printf("%d: woken (monitor_enter_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+		//printf("%d: woken (monitor_enter_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 
 		MONITOR_UNLOCK(monitor);
 	}
@@ -4527,7 +4527,7 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 	MONITOR_LOCK(monitor, CALLER_MONITOR_WAIT);
 #if defined(OMR_THR_MCS_LOCKS)
 	if (0 == monitor->spinThreads) {
-		printf("%d: waking threads (monitor_wait_original): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+		//printf("%d: waking threads (monitor_wait_original): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 		unblock_spinlock_threads(self, monitor);
 	}
 #else /* defined(OMR_THR_MCS_LOCKS) */
@@ -4545,7 +4545,7 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 	self->lockedmonitorcount--;
 #endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
-	printf("%d: waiting (monitor_wait_original): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+	//printf("%d: waiting (monitor_wait_original): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 	self->waitNumber = monitor_maximum_wait_number(monitor) + 1;
 	threadEnqueue(&monitor->waiting, self);
 
@@ -4607,7 +4607,7 @@ monitor_wait_original(omrthread_t self, omrthread_monitor_t monitor,
 
 	/* DONE WAITING AT THIS POINT */
 
- 	printf("%d: waking up (monitor_wait_original): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+ 	//printf("%d: waking up (monitor_wait_original): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 #ifndef OMR_THR_THREE_TIER_LOCKING
 	self->monitor = 0;
 #endif
@@ -4797,7 +4797,7 @@ monitor_wait_three_tier(omrthread_t self, omrthread_monitor_t monitor,
 	MONITOR_LOCK(monitor, CALLER_MONITOR_WAIT);
 #if defined(OMR_THR_MCS_LOCKS)
 	if (0 == monitor->spinThreads) {
-		printf("%d: waking threads (monitor_wait_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+		//printf("%d: waking threads (monitor_wait_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 		unblock_spinlock_threads(self, monitor);
 	}
 #else /* defined(OMR_THR_MCS_LOCKS) */
@@ -4816,7 +4816,7 @@ monitor_wait_three_tier(omrthread_t self, omrthread_monitor_t monitor,
 
 	threadEnqueue(&monitor->waiting, self);
 
-	printf("%d: waiting (monitor_wait_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+	//printf("%d: waiting (monitor_wait_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 
 	if (millis || nanos) {
 		/*
@@ -4869,7 +4869,7 @@ monitor_wait_three_tier(omrthread_t self, omrthread_monitor_t monitor,
 
 	/* DONE WAITING AT THIS POINT */
 
-	printf("%d: waiting (monitor_wait_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
+	//printf("%d: waiting (monitor_wait_three_tier): monitor - %s, state - %zu\n", (int)self->tid, monitor->name, monitor->spinlockState);
 
 	/* we have to remove self from the wait queue */
 	if (notified) {
