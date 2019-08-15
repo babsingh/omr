@@ -28,6 +28,17 @@ extern "C" {
 #include "threaddef.h"
 #include "ut_j9thr.h"
 
+/* Atomic exchange (of various sizes) */
+static inline void *xchg_64(void *ptr, void *x)
+{
+	__asm__ __volatile__("xchgq %0,%1"
+				:"=r" ((unsigned long long) x)
+				:"m" (*(volatile long long *)ptr), "0" ((unsigned long long) x)
+				:"memory");
+
+	return x;
+}
+
 void
 omrthread_monitor_pin(omrthread_monitor_t monitor, omrthread_t self)
 {
@@ -222,15 +233,18 @@ omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_
 		//printf("%d: mcs_lock_enter: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
 
 		/* Install the mcsNode at the tail of the MCS lock queue (monitor->queueTail). */
-		predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::lockCompareExchange(
-				(volatile uintptr_t *)&monitor->queueTail,
-				(uintptr_t)monitor->queueTail,
-				(uintptr_t)mcsNode);
+	//	predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::lockCompareExchange(
+	//			(volatile uintptr_t *)&monitor->queueTail,
+	//			(uintptr_t)monitor->queueTail,
+	//			(uintptr_t)mcsNode);
+		predecessor = (omrthread_mcs_node_t)xchg_64(&monitor->queueTail, mcsNode);
 	}
 
-	//printf("%d: mcs_lock_enter: monitor - %s %p, state - %zu, mcsNode - %p, predecessor - %p, queueTail - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, predecessor, monitor->queueTail);
+	//printf("%d: mcs_lock_enter: monitor - %s %p, state - %zu, mcsNode - %p, predecessor - %p, queueTail - %p, retry - %d\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, predecessor, monitor->queueTail, (int)retry);
 
 	if ((NULL != predecessor) || retry) {
+		//printf("%d: mcs_lock_enter: monitor - %s %p, state - %zu, mcsNode - %p, predecessor - %p, queueTail - %p, retry - %d\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, predecessor, monitor->queueTail, (int)retry);
+
 		/* If a predecessor MCS node exists, then the current thread blocks (waits) until it receives
 		 * a notification from the thread that owns the predecessor MCS node.
 		 */
@@ -247,29 +261,35 @@ omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_
 		/* Three-tier busy-wait loop which checks if the mcsNode->blocked value is reset by the
 		 * thread that owns the predecessor node.
 		 */
-		for (uintptr_t spinCount3 = monitor->spinCount3; spinCount3 > 0; spinCount3--) {
-			for (uintptr_t spinCount2 = monitor->spinCount2; spinCount2 > 0; spinCount2--) {
-				/* Check if mcsNode->blocked is reset (== 0) so that it can acquire the lock. */
-				if (0 == VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->blocked, (uintptr_t)0)) {
-					goto lockAcquired;
-				}
-				/* Stop spinning if adaptive spin heuristic disables spinning */
-				if (OMR_ARE_ALL_BITS_SET(monitor->flags, J9THREAD_MONITOR_DISABLE_SPINNING)) {
-					goto exit;
-				}
-				VM_AtomicSupport::yieldCPU();
-				/* begin tight loop */
-				for (uintptr_t spinCount1 = monitor->spinCount1; spinCount1 > 0; spinCount1--) {
-					VM_AtomicSupport::nop();
-				} /* end tight loop */
+		while(TRUE) {
+			if (0 == VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->blocked, (uintptr_t)0)) {
+				goto lockAcquired;
 			}
-#if defined(OMR_THR_YIELD_ALG)
-			omrthread_yield_new(spinCount3);
-#else /* OMR_THR_YIELD_ALG */
-			omrthread_yield();
-#endif /* OMR_THR_YIELD_ALG */
+			asm volatile("pause\n": : :"memory");
 		}
-		//printf("%d: mcs_lock_not_acquired: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
+		//for (uintptr_t spinCount3 = monitor->spinCount3; spinCount3 > 0; spinCount3--) {
+		//	for (uintptr_t spinCount2 = monitor->spinCount2; spinCount2 > 0; spinCount2--) {
+		//		/* Check if mcsNode->blocked is reset (== 0) so that it can acquire the lock. */
+		//		if (0 == VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->blocked, (uintptr_t)0)) {
+		//			goto lockAcquired;
+		//		}
+		//		/* Stop spinning if adaptive spin heuristic disables spinning */
+		//		if (OMR_ARE_ALL_BITS_SET(monitor->flags, J9THREAD_MONITOR_DISABLE_SPINNING)) {
+		//			goto exit;
+		//		}
+		//		VM_AtomicSupport::yieldCPU();
+		//		/* begin tight loop */
+		//		for (uintptr_t spinCount1 = monitor->spinCount1; spinCount1 > 0; spinCount1--) {
+		//			VM_AtomicSupport::nop();
+		//		} /* end tight loop */
+		//	}
+//#if defined(OMR_THR_YIELD_ALG)
+		//	omrthread_yield_new(spinCount3);
+//#else /* OMR_THR_YIELD_ALG */
+		//	omrthread_yield();
+//#endif /* OMR_THR_YIELD_ALG */
+		//}
+		//printf("%d: mcs_lock_not_acquired: monitor - %s %p, state - %zu, mcsNode - %p, blocked - %zu, queueNext - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->blocked, mcsNode->queueNext);
 	} else {
 		/* The lock can be acquired since no predecessor MCS node exists. */
 lockAcquired:
@@ -301,10 +321,10 @@ lockAcquired:
 			self->mcsNodes->stackHead = mcsNode;
 			mcsNode->stackNext = oldMCSNode;
 		}
-		//printf("%d: mcs_lock_acquired: monitor - %s, state - %zu, mcsNode - %p, mcsNode->monitor - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode, mcsNode->monitor);
+		//printf("%d: mcs_lock_acquired: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, blocked - %zu, queueNext - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, mcsNode->blocked, mcsNode->queueNext);
 	}
 
-exit:
+//exit:
 	return result;
 }
 
@@ -366,7 +386,7 @@ omrthread_mcs_trylock(omrthread_t self, omrthread_monitor_t monitor, omrthread_m
 			self->mcsNodes->stackHead = mcsNode;
 			mcsNode->stackNext = oldMCSNode;
 		}
-		//printf("%d: mcs_lock_try_acquired: monitor - %s, state - %zu, mcsNode - %p, mcsNode->monitor - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode, mcsNode->monitor);
+		//printf("%d: mcs_lock_try_acquired: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, blocked - %zu, queueNext - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, mcsNode->blocked, mcsNode->queueNext);
 		result = 0;
 	} else {
 		//printf("%d: mcs_lock_try_not_acquired: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
@@ -409,6 +429,7 @@ omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor)
 	omrthread_mcs_node_t successor = (omrthread_mcs_node_t)VM_AtomicSupport::add((volatile uintptr_t *)&mcsNode->queueNext, (uintptr_t)0);
 	//printf("%d: mcs_unlock_enter: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, successor - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, successor);
 	if (NULL == successor) {
+
 		/* If no successor exists, then mcsNode is at the tail of the MCS lock queue. Release
 		 * the lock by replacing the mcsNode at the tail of the queue with NULL.
 		 */
@@ -419,6 +440,8 @@ omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor)
 			//printf("%d: mcs_unlock_enter: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, successor - %p, queueTail - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, successor, monitor->queueTail);
 		}
 
+                //printf("%d: mcs_unlock_enter: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, successor - %p, queueTail - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, successor, monitor->queueTail);
+
 		/* Another thread is recording a successor in mcsNode->queueNext. Wait for the thread
 		 * to record the successor.
 		 */
@@ -428,9 +451,10 @@ omrthread_mcs_unlock(omrthread_t self, omrthread_monitor_t monitor)
 	monitor->spinlockState = J9THREAD_MONITOR_SPINLOCK_UNOWNED;
 
 	/* Allow the successor to acquire the lock by resetting its blocked field. */
-	successor->blocked = 0;
+	VM_AtomicSupport::set((volatile uintptr_t *)&successor->blocked, (uintptr_t)0);
+	//successor->blocked = 0;
 
-	//printf("%d: mcs_unlock_enter: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, successor - %p, queueTail - %p\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, successor, monitor->queueTail);
+	//printf("%d: mcs_unlock_enter: monitor - %s %p, state - %zu, mcsNode - %p, mcsNode->monitor - %p, successor - %p, queueTail - %p, successor->blocked - %zu\n", (int)self->tid, monitor->name, monitor, monitor->spinlockState, mcsNode, mcsNode->monitor, successor, monitor->queueTail, successor->blocked);
 
 lockReleased:
 	//printf("%d: mcs_unlock_released: monitor - %s, state - %zu, mcsNode - %p\n", (int)self->tid, monitor->name, monitor->spinlockState, mcsNode);
