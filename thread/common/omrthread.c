@@ -4039,22 +4039,11 @@ static void
 unblock_spinlock_threads(omrthread_t self, omrthread_monitor_t monitor)
 {
 	omrthread_t queue, next;
-#if defined(OMR_THR_SPIN_WAKE_CONTROL)
-	uintptr_t i = 0;
-#endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
-
 	ASSERT(self);
-#if defined(OMR_THR_SPIN_WAKE_CONTROL)
-	i = self->library->maxWakeThreads;
-#endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	ASSERT(monitor);
 
 	next = monitor->blocking;
-#if defined(OMR_THR_SPIN_WAKE_CONTROL)
-	for (; (NULL != next) && (i > 0); i--)
-#else /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	while (NULL != next)
-#endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 	{
 		queue = next;
 		next = queue->next;
