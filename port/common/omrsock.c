@@ -27,7 +27,7 @@
  */
 #include "omrport.h"
 #include "omrporterror.h"
-#include "omrsock.h"
+#include "omrportsock.h"
 
 /**
  * Returns hints as a double pointer to an OMRAddInfoNode structure.
