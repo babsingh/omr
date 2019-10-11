@@ -25,11 +25,9 @@
  * @ingroup Port
  * @brief Sockets
  */
-#include "omrsock.h"
-
 #include "omrport.h"
 #include "omrporterror.h"
-#include "omrportsock.h"
+#include "omrsock.h"
 
 /**
  * Returns hints as a double pointer to an OMRAddInfoNode structure.

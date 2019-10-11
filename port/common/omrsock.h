@@ -23,6 +23,8 @@
 #if !defined(OMRSOCK_H_)
 #define OMRSOCK_H_
 
+#include "omrportsock.h"
+
 /**
  * WIN32_LEAN_AND_MEAN determines what is included in Windows.h. If it is
  * defined, some unneeded header files in Windows.h will not be included.
