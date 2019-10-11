@@ -23,66 +23,11 @@
 #if !defined(OMRPORTSOCK_H_)
 #define OMRPORTSOCK_H_
 
-/**
- * WIN32_LEAN_AND_MEAN determines what is inluded in Windows.h. If it is
- * defined, some unneeded header files in Windows.h will not be included.
- */
-#if defined(OMR_OS_WINDOWS) && !defined(WIN32_LEAN_AND_MEAN)
-#define WIN32_LEAN_AND_MEAN
-#endif /* defined(OMR_OS_WINDOWS) && !defined(WIN32_LEAN_AND_MEAN) */
+/* Pointer to OMRAddInfoNode, a struct that contains addrinfo information. */
+struct OMRAddrInfoNode;
+typedef struct OMRAddrInfoNode *omrsock_addrinfo_t;
 
-/* To avoid WINSOCK redefinition errors. */
-#if defined(OMR_OS_WINDOWS) && defined(_WINSOCKAPI_)
-#undef _WINSOCKAPI_
-#endif /* defined(OMR_OS_WINDOWS) && defined(_WINSOCKAPI_) */
-
-#if defined(OMR_OS_WINDOWS)
-/* windows.h defined UDATA. Ignore its definition to avoid redefinition errors */
-#define UDATA UDATA_win32_
-#include <windows.h>
-#undef UDATA
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment (lib, "Mswsock.lib") 
-#pragma comment (lib, "AdvApi32.lib") 
-#else /* defined(OMR_OS_WINDOWS) */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#endif /* defined(OMR_OS_WINDOWS) */
-
-#include<stdlib.h>
-#include<stdio.h>
-
-/* Common data types required for using the omr socket API */
-
-#if defined(OMR_OS_WINDOWS)
-typedef SOCKET OMRSocket;
-typedef SOCKADDR OMRSockAddr; /* for IPv4 */
-typedef SOCKADDR_IN OMRSockAddrIn;	/* for IPv4 addresses*/
-typedef SOCKADDR_IN6 OMRSockAddrIn6;  /* for IPv6 addresses*/
-typedef struct sockaddr_storage OMRSockAddrStorage; /* For IPv4 or IPv6 addresses */
-typedef struct addrinfoW OMRAddrInfo;  /* addrinfo structure – Unicode, for IPv4 or IPv6 */
-#else /* defined(OMR_OS_WINDOWS) */
-typedef int32_t OMRSocket;
-typedef struct sockaddr OMRSockAddr;
-typedef struct sockaddr_in OMRSockAddrIn; /* for IPv4 addresses*/
-typedef struct sockaddr_in6 OMRSockAddrIn6; /* for IPv6 addresses*/
-typedef struct sockaddr_storage OMRSockAddrStorage; /* For IPv4 or IPv6 addresses */
-typedef struct addrinfo OMRAddrInfo; /* addrinfo structure for IPv4 or IPv6*/
-#endif /* defined(OMR_OS_WINDOWS) */
-
-/* Filled in using @ref omr_getaddrinfo. */
-typedef struct OMRAddrInfoNode {
-	/* Defined differently depending on the operating system.
-	 * Pointer to the first addrinfo node in listed list. 
-	 */
-	OMRAddrInfo *addrInfo;
-	/* Number of addrinfo nodes in linked list */
-	uint32_t length;
-} OMRAddrInfoNode;
-typedef OMRAddrInfoNode *omrsock_addrinfo_t;
-
+typedef OMRSockAddrStorage;
 /* Pointer to ip address. It has enough space for Ipv4 or IPv6 addresses. */
 typedef OMRSockAddrStorage *omrsock_sockaddr_t;
 

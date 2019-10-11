@@ -25,6 +25,7 @@
  * @ingroup Port
  * @brief Sockets
  */
+#include "omrsock.h"
 
 #include "omrport.h"
 #include "omrporterror.h"
