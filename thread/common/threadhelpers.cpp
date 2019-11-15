@@ -227,7 +227,7 @@ omrthread_mcs_lock(omrthread_t self, omrthread_monitor_t monitor, omrthread_mcs_
 		mcsNode->blocked = OMRTHREAD_MCS_THREAD_BLOCKED;
 
 		/* Install the mcsNode at the tail of the MCS lock queue (monitor->queueTail). */
-		predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::set(
+		predecessor = (omrthread_mcs_node_t)VM_AtomicSupport::lockExchange(
 				(volatile uintptr_t *)&monitor->queueTail,
 				(uintptr_t)mcsNode);
 	}
