@@ -1269,18 +1269,6 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
 		return OMRPORT_SIG_ERROR;
 	}
 
-	/* If a process has blocked an asynchronous signal, then the signal stays
-	 * blocked in the sub-processes across fork(s) and exec(s). A blocked
-	 * signal prevents its OS signal handler to be invoked. A signal is
-	 * unblocked as an OS signal handler is installed for it in case a
-	 * parent process has blocked it.
-	 */
-	if (OMR_ARE_ALL_BITS_SET(OMRPORT_SIG_FLAG_SIGALLASYNC, portLibrarySignalNo)) {
-		if (0 != unblockSignal(unixSignalNo)) {
-			return OMRPORT_SIG_ERROR;
-		}
-	}
-
 	memset(&newAction, 0, sizeof(struct sigaction));
 
 	/* Do not block any signals. */
@@ -1316,14 +1304,14 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
 	}
 #endif /* defined(J9ZOS390) */
 
-#if defined(AIXPPC)
+#if defined(AIXPPC) || defined(LINUXPPC)
 	/* Do the following while installing a handler for an asynchronous signal block SIGTRAP. */
 	if (OMR_ARE_ALL_BITS_SET(OMRPORT_SIG_FLAG_SIGALLASYNC, portLibrarySignalNo)) {
 		if (sigaddset(&newAction.sa_mask, SIGTRAP)) {
 			return OMRPORT_SIG_ERROR;
 		}
 	}
-#endif /* defined(AIXPPC) */
+#endif /* defined(AIXPPC) || defined(LINUXPPC) */
 
 	/* The main exception handler:
 	 * The (void *) casting only applies to zLinux because a new parameter "uintptr_t breakingEventAddr"
@@ -1373,6 +1361,16 @@ registerSignalHandlerWithOS(OMRPortLibrary *portLibrary, uint32_t portLibrarySig
 	}
 
 	issueWriteBarrier();
+
+	/* If a process has blocked an asynchronous signal, then the signal stays
+	 * blocked in the sub-processes across fork(s) and exec(s). A blocked
+	 * signal prevents its OS signal handler to be invoked. A signal is
+	 * unblocked as an OS signal handler is installed for it in case a
+	 * parent process has blocked it.
+	 */
+	if (OMR_ARE_ALL_BITS_SET(OMRPORT_SIG_FLAG_SIGALLASYNC, portLibrarySignalNo)) {
+		unblockSignal(unixSignalNo);
+	}
 
 	setBitMaskSignalsWithHandlers(portLibrarySignalNo);
 
@@ -1899,7 +1897,7 @@ unblockSignal(int signal) {
 	}
 
 	/* Unblock the signal. */
-	rc = pthread_sigmask(SIG_UNBLOCK, &signalSet, NULL);
+	rc = sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 	if (0 != rc) {
 		Trc_PRT_signal_unblockSignals_pthread_sigmask_failed(rc, errno);
 	}
