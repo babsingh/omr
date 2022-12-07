@@ -83,6 +83,26 @@ static uintptr_t maskProtectedFunction(struct OMRPortLibrary *portLibrary, void 
 static uintptr_t unmaskProtectedFunction(struct OMRPortLibrary *portLibrary, void *arg);
 static int sigMaskThread(void *arg);
 
+static void
+printSigset(const char *info, const sigset_t *sigset)
+{
+	int sig = 0;
+	int cnt = 0;
+
+	portTestEnv->log("%s\n", info);
+
+	for (sig = 1; sig < NSIG; sig++) {
+		if (sigismember(sigset, sig)) {
+			cnt++;
+			portTestEnv->log("\tsignum: %d, signame: %s\n", sig, strsignal(sig));
+		}
+	}
+
+	if (0 == cnt) {
+		portTestEnv->log("\t<empty signal set>\n");
+	}
+}
+
 /**
  * Set SigMaskTestInfo for a child thread.
  *
@@ -404,14 +424,23 @@ TEST(PortSignalExtendedTests, sig_ext_test1)
 
 	reportTestEntry(OMRPORTLIB, testName);
 
+	printSigset("[before init] mask sigset_t", &mask);
+	printSigset("[before init] currentMask sigset_t", &currentMask);
+
 	/* initialize local variables */
 	memset(&maskThreadInfo, 0, sizeof(maskThreadInfo));
 	memset(&unmaskThreadInfo, 0, sizeof(unmaskThreadInfo));
+	memset(&mask, 0, sizeof(mask));
+	memset(&oldMask, 0, sizeof(oldMask));
+	memset(&currentMask, 0, sizeof(currentMask));
 	sigemptyset(&mask);
 	sigemptyset(&oldMask);
 	sigemptyset(&currentMask);
 	sigemptyset(&maskThread_mask);
 	sigemptyset(&unmaskThread_mask);
+
+	printSigset("[after init] mask sigset_t", &mask);
+	printSigset("[after init] currentMask sigset_t", &currentMask);
 
 	/*
 	 * OSX will redirect the SIGILL from the masked thread to other threads unless they are also masked.
@@ -422,6 +451,8 @@ TEST(PortSignalExtendedTests, sig_ext_test1)
 		outputErrorMessage(PORTTEST_ERROR_ARGS, "pthread_sigmask failed: %s(%d).\n", strerror(errno), errno);
 		FAIL();
 	}
+
+	printSigset("[after set] mask sigset_t", &mask);
 
 	monitorRC = omrthread_monitor_init_with_name(&maskMonitor, 0, "omrsig_ext_sigmask_monitor");
 	if (0 != monitorRC) {
@@ -483,6 +514,9 @@ TEST(PortSignalExtendedTests, sig_ext_test1)
 			outputErrorMessage(PORTTEST_ERROR_ARGS, "pthread_sigmask failed: %s(%d).\n", strerror(errno), errno);
 			goto exit;
 		}
+
+		printSigset("[after set] currentMask sigset_t", &currentMask);
+
 		/* check whether main thread signal mask was affected by child thread pthread_sigmask operation */
 		if (0 != (memcmp_ret = memcmp(&currentMask, &mask, sizeof(currentMask)))) {
 			outputErrorMessage(PORTTEST_ERROR_ARGS, "main thread mask was modified (old=0x%X, new=0x%X), %X\n", *((uint32_t *)&mask), *((uint32_t *)&currentMask), memcmp_ret);
